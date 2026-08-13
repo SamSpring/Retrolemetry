@@ -2,15 +2,15 @@
 import PackageDescription
 
 let package = Package(
-    name: "DockTelemetry",
+    name: "Retrolemetry",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "DockTelemetry", targets: ["DockTelemetry"])
+        .executable(name: "Retrolemetry", targets: ["Retrolemetry"])
     ],
     targets: [
         .executableTarget(
-            name: "DockTelemetry",
-            path: "Sources/DockTelemetry"
+            name: "Retrolemetry",
+            path: "Sources/Retrolemetry"
         )
     ]
 )

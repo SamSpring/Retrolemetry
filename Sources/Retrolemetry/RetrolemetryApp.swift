@@ -4,7 +4,7 @@ import CoreGraphics
 import ServiceManagement
 
 @main
-struct DockTelemetryApp: App {
+struct RetrolemetryApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
@@ -250,7 +250,7 @@ struct SettingsView: View {
         panel.nameFieldStringValue = "Retrolemetry-Settings-Backup.plist"
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
-        let bundleID = Bundle.main.bundleIdentifier ?? "com.sam.docktelemetry"
+        let bundleID = Bundle.main.bundleIdentifier ?? "io.github.SamSpring.Retrolemetry"
         var values = UserDefaults.standard.persistentDomain(forName: bundleID) ?? [:]
         values = values.filter { $0.key.hasPrefix("DockTelemetry.") }
         values["DockTelemetry.backupFormat"] = 1
@@ -272,6 +272,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        migrateLegacyPreferences()
+        // Keep the legacy key namespace so early-build settings survive the public rename.
         UserDefaults.standard.register(defaults: [
             "DockTelemetry.cycleDuration": 40.0,
             "DockTelemetry.automaticCycleEnabled": true,
@@ -296,6 +298,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         installStatusItem()
         installSignalToggle()
         closeLegacySettingsWindow()
+    }
+
+    private func migrateLegacyPreferences() {
+        let defaults = UserDefaults.standard
+        for domainName in ["com.sam.docktelemetry", "DockTelemetry"] {
+            guard let legacyValues = defaults.persistentDomain(forName: domainName) else { continue }
+            for (key, value) in legacyValues where key.hasPrefix("DockTelemetry.") {
+                if defaults.object(forKey: key) == nil {
+                    defaults.set(value, forKey: key)
+                }
+            }
+        }
     }
 
     func applicationShouldRestoreState(_ app: NSApplication) -> Bool { false }
@@ -488,7 +502,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         )
         super.init()
         window.title = "Retrolemetry Settings"
-        window.identifier = NSUserInterfaceItemIdentifier("DockTelemetry.Settings")
+        window.identifier = NSUserInterfaceItemIdentifier("Retrolemetry.Settings")
         window.contentView = NSHostingView(rootView: SettingsView())
         window.isReleasedWhenClosed = false
         window.delegate = self
