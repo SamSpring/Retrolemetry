@@ -25,6 +25,7 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Match-display, common Mac/iPad/phone-landscape, and custom output sizing with proportional 960×540 rendering
 - A combined 12-hour weather forecast and configurable 3–7-day daily outlook
 - Reproducible `.app` bundle packaging, Developer ID signing hooks, and notarization workflow
+- Optional 5/10/20-pixel snapping for moving and resizing modules in the layout editor
 
 ### Changed
 
@@ -32,5 +33,9 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Existing `DockTelemetry.*` preference keys retained to preserve settings for early builds
 - Scene changes now keep both views on screen for a continuous edge-to-edge pan
 - The System Telemetry globe area now presents live quotes, daily changes, ranges, and accumulating price traces
+- Signal Analysis now uses a slower, stable perspective grid that travels toward the horizon
+- Wipe transitions are fully opaque, and Sync Roll now collapses and restores the CRT image at the center line
+- Settings navigation and the layout editor inspector were reorganized for clearer editing at practical window sizes
+- All three typography controls now support scaling up to 200%
 
 [Unreleased]: https://github.com/SamSpring/Retrolemetry/commits/main

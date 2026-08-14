@@ -222,22 +222,31 @@ struct ConsoleView: View {
         switch style {
         case .pan:
             sceneView(scene, time: time)
+                .background(Color.black)
                 .offset(x: incoming
                     ? CGFloat(transitionDirection) * 960 * (1 - transitionProgress)
                     : -CGFloat(transitionDirection) * 960 * transitionProgress)
         case .wipe:
             if incoming {
                 sceneView(scene, time: time)
+                    .background(Color.black)
                     .mask(DiagonalWipeMask(progress: transitionProgress, direction: transitionDirection))
             } else {
                 sceneView(scene, time: time)
+                    .background(Color.black)
             }
         case .syncRoll:
+            let halfProgress = incoming
+                ? max(0, min(1, (transitionProgress - 0.48) / 0.52))
+                : max(0, min(1, transitionProgress / 0.52))
+            let verticalScale = incoming
+                ? max(0.018, halfProgress)
+                : max(0.018, 1 - halfProgress)
             sceneView(scene, time: time)
-                .offset(
-                    x: CGFloat(sin(Double(transitionProgress) * .pi * 8)) * (incoming ? 5 : -5),
-                    y: incoming ? -540 * (1 - transitionProgress) : 540 * transitionProgress
-                )
+                .background(Color.black)
+                .scaleEffect(x: 1 + (1 - verticalScale) * 0.018, y: verticalScale, anchor: .center)
+                .offset(x: CGFloat(sin(Double(transitionProgress) * .pi * 15)) * (1 - verticalScale) * 11)
+                .opacity(incoming ? (transitionProgress >= 0.48 ? 1 : 0) : (transitionProgress < 0.52 ? 1 : 0))
         }
     }
 
@@ -341,28 +350,30 @@ private struct SyncRollBand: View {
 
     var body: some View {
         Canvas { context, size in
-            let y = progress * (size.height + 90) - 45
+            let y = size.height / 2
+            let intensity = max(0, 1 - abs(progress - 0.5) * 2)
+            let bandHeight = 8 + intensity * 48
             context.fill(
-                Path(CGRect(x: 0, y: y - 28, width: size.width, height: 56)),
+                Path(CGRect(x: 0, y: y - bandHeight / 2, width: size.width, height: bandHeight)),
                 with: .linearGradient(
                     Gradient(colors: [.clear, .black.opacity(0.82), phosphor.opacity(0.18), .black.opacity(0.72), .clear]),
-                    startPoint: CGPoint(x: 0, y: y - 28),
-                    endPoint: CGPoint(x: 0, y: y + 28)
+                    startPoint: CGPoint(x: 0, y: y - bandHeight / 2),
+                    endPoint: CGPoint(x: 0, y: y + bandHeight / 2)
                 )
             )
-            for index in 0..<18 {
-                let start = CGFloat((index * 83 + Int(progress * 1000)) % 900)
+            for index in 0..<14 {
+                let start = CGFloat((index * 83 + Int(progress * 720)) % 900)
                 let length = CGFloat(22 + (index * 31) % 128)
                 let offset = CGFloat(index % 7) - 3
                 context.fill(
-                    Path(CGRect(x: start, y: y + offset * 2.2, width: length, height: index.isMultiple(of: 4) ? 2 : 1)),
-                    with: .color((index.isMultiple(of: 3) ? Color.white : phosphor).opacity(0.22))
+                    Path(CGRect(x: start, y: y + offset * 3.1, width: length, height: index.isMultiple(of: 4) ? 2 : 1)),
+                    with: .color((index.isMultiple(of: 3) ? Color.white : phosphor).opacity(0.10 + intensity * 0.34))
                 )
             }
             var edge = Path()
             edge.move(to: CGPoint(x: 0, y: y))
             edge.addLine(to: CGPoint(x: size.width, y: y))
-            context.stroke(edge, with: .color(phosphor.opacity(0.92)), lineWidth: 2)
+            context.stroke(edge, with: .color(phosphor.opacity(0.18 + intensity * 0.82)), lineWidth: 1.5 + intensity * 2.5)
         }
         .allowsHitTesting(false)
     }
@@ -1225,39 +1236,43 @@ private func drawSynthwaveGrid(
     time: Double,
     cpuLoad: Double
 ) {
-    let horizon = rect.minY + rect.height * 0.34
+    let horizon = rect.minY + rect.height * 0.32
     let bottom = rect.maxY
     let centerX = rect.midX
-    let travel = time * (0.32 + min(1, max(0, cpuLoad)) * 1.9)
+    let normalizedLoad = min(1, max(0, cpuLoad))
+    let travel = time * (0.055 + normalizedLoad * 0.095)
 
-    for index in -12...12 {
-        let bottomX = centerX + CGFloat(index) * rect.width / 13
+    for index in -10...10 {
+        let bottomX = centerX + CGFloat(index) * rect.width / 10
         var path = Path()
-        for step in 0...48 {
-            let depth = CGFloat(step) / 48
-            let perspective = pow(depth, 1.72)
-            let wave = sin(Double(depth) * 10 + travel * 1.35 + Double(index) * 0.42)
-            let x = centerX + (bottomX - centerX) * perspective + CGFloat(wave) * 5 * depth
-            let y = horizon + (bottom - horizon) * perspective
+        for step in 0...64 {
+            let depth = CGFloat(step) / 64
+            let perspective = pow(depth, 1.58)
+            let x = centerX + (bottomX - centerX) * perspective
+            let xPhase = Double(index) * 0.43
+            let terrain = sin(Double(depth) * 6.2 + xPhase + time * 0.16) * 7.5 * Double(perspective)
+            let y = horizon + (bottom - horizon) * perspective + CGFloat(terrain)
             step == 0 ? path.move(to: CGPoint(x: x, y: y)) : path.addLine(to: CGPoint(x: x, y: y))
         }
-        context.stroke(path, with: .color(dimPhosphor.opacity(0.86)), lineWidth: 1)
+        context.stroke(path, with: .color(dimPhosphor.opacity(0.78)), lineWidth: 0.9)
     }
 
-    for row in 0..<18 {
-        let phase = (Double(row) / 18 + travel * 0.095).truncatingRemainder(dividingBy: 1)
-        let depth = CGFloat(phase)
-        let perspective = pow(depth, 2.12)
+    for row in 0..<16 {
+        let rawDepth = Double(row) / 16 - travel
+        let wrappedDepth = rawDepth - floor(rawDepth)
+        let depth = CGFloat(wrappedDepth)
+        let perspective = pow(depth, 1.82)
         let yBase = horizon + (bottom - horizon) * perspective
         var path = Path()
-        for step in 0...72 {
-            let xProgress = CGFloat(step) / 72
-            let x = rect.minX + rect.width * xProgress
-            let wave = sin(Double(xProgress) * .pi * 4 + travel * 1.6 + Double(row) * 0.33)
-            let y = yBase + CGFloat(wave) * (2 + 9 * perspective)
+        for step in 0...80 {
+            let xProgress = CGFloat(step) / 80
+            let normalizedX = xProgress * 2 - 1
+            let x = centerX + normalizedX * rect.width * 0.56 * perspective
+            let terrain = sin(Double(normalizedX) * .pi * 2.2 + Double(depth) * 6.2 + time * 0.16)
+            let y = yBase + CGFloat(terrain) * 7.5 * perspective
             step == 0 ? path.move(to: CGPoint(x: x, y: y)) : path.addLine(to: CGPoint(x: x, y: y))
         }
-        context.stroke(path, with: .color(phosphor.opacity(0.38 + Double(perspective) * 0.46)), lineWidth: 0.8 + perspective * 0.8)
+        context.stroke(path, with: .color(phosphor.opacity(0.30 + Double(perspective) * 0.58)), lineWidth: 0.7 + perspective * 0.9)
     }
 
     var horizonPath = Path()

@@ -226,6 +226,11 @@ struct LayoutEditorView: View {
     @StateObject private var marketPreview = MarketModel(preview: true)
     @AppStorage("DockTelemetry.radarWidthCorrection") private var radarWidthCorrection = 1.10
     @AppStorage("DockTelemetry.radarHeightCorrection") private var radarHeightCorrection = 0.9254
+    @AppStorage("DockTelemetry.globeWidthCorrection") private var globeWidthCorrection = 1.10
+    @AppStorage("DockTelemetry.globeHeightCorrection") private var globeHeightCorrection = 0.9254
+    @AppStorage("DockTelemetry.signalSynthwaveGrid") private var signalSynthwaveGrid = false
+    @AppStorage("DockTelemetry.layoutSnapEnabled") private var snapEnabled = false
+    @AppStorage("DockTelemetry.layoutSnapStep") private var snapStep = 10.0
     @State private var scene: ConsoleScene = .system
     @State private var selection = "marketFocus"
     @State private var interactionModule: String?
@@ -233,82 +238,84 @@ struct LayoutEditorView: View {
     @State private var interactionKind: InteractionKind?
     private let scale = 0.68
 
-    private enum InteractionKind { case move, resize }
+    private enum InteractionKind: Equatable { case move, resize }
 
     var body: some View {
         FontRuntime.scale = layouts.fontScale
         FontRuntime.secondaryScale = layouts.secondaryFontScale
         FontRuntime.auxiliaryScale = layouts.auxiliaryFontScale
-        return VStack(spacing: 12) {
+        return VStack(spacing: 14) {
             HStack {
                 Picker("View", selection: $scene) {
                     ForEach(ConsoleScene.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
-                .frame(width: 320)
+                .frame(width: 380)
                 .onChange(of: scene) {
                     layouts.cancelInteraction()
                     clearInteraction()
                     selection = LayoutDefaults.modules(for: scene).first?.id ?? ""
                 }
-                Spacer(minLength: 20)
-                LabeledContent("Font size") {
-                    Slider(value: $layouts.fontScale, in: 0.75...1.45).frame(width: 125)
-                }
-                Text("\(Int(layouts.fontScale * 100))%")
-                    .monospacedDigit().frame(width: 42, alignment: .trailing)
+                Spacer()
                 Button("Reset this view") { layouts.reset(scene) }
-            }
-
-            HStack {
-                LabeledContent("Secondary text") {
-                    Slider(value: $layouts.secondaryFontScale, in: 0.65...1.45).frame(width: 125)
-                }
-                Text("\(Int(layouts.secondaryFontScale * 100))%")
-                    .monospacedDigit().frame(width: 42, alignment: .trailing)
-                Text("Controls labels, headings, and supporting readouts.")
-                    .font(.caption).foregroundStyle(.secondary)
-                Spacer()
-            }
-
-            HStack {
-                LabeledContent("Other text") {
-                    Slider(value: $layouts.auxiliaryFontScale, in: 0.65...1.45).frame(width: 125)
-                }
-                Text("\(Int(layouts.auxiliaryFontScale * 100))%")
-                    .monospacedDigit().frame(width: 42, alignment: .trailing)
-                Text("Controls chrome, status, and remaining inherited text.")
-                    .font(.caption).foregroundStyle(.secondary)
-                Spacer()
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 12) {
-                    Text("Radar width").frame(width: 92, alignment: .leading)
-                    Text("NARROW").font(.caption2).foregroundStyle(.secondary)
-                    Slider(value: $radarWidthCorrection, in: 0.70...1.35).frame(width: 260)
-                    Text("WIDE").font(.caption2).foregroundStyle(.secondary)
-                    Text("\(Int(radarWidthCorrection * 100))%")
-                        .monospacedDigit().frame(width: 42, alignment: .trailing)
-                    Spacer()
-                }
-                HStack(spacing: 12) {
-                    Text("Radar height").frame(width: 92, alignment: .leading)
-                    Text("SHORT").font(.caption2).foregroundStyle(.secondary)
-                    Slider(value: $radarHeightCorrection, in: 0.70...1.35).frame(width: 260)
-                    Text("TALL").font(.caption2).foregroundStyle(.secondary)
-                    Text("\(Int(radarHeightCorrection * 100))%")
-                        .monospacedDigit().frame(width: 42, alignment: .trailing)
-                    Text("Adjust both while looking at the physical dock screen until the radar is circular.")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                }
             }
 
             HStack(alignment: .top, spacing: 14) {
                 editorCanvas
-                ScrollView {
+                editorInspector
+            }
+        }
+        .padding(18)
+    }
+
+    private var editorInspector: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                GroupBox("Layout") {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("MODULES").font(.headline)
+                        Toggle("Snap while dragging", isOn: $snapEnabled)
+                        Picker("Grid", selection: $snapStep) {
+                            Text("5 px").tag(5.0)
+                            Text("10 px").tag(10.0)
+                            Text("20 px").tag(20.0)
+                        }
+                        .disabled(!snapEnabled)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                if scene == .signal {
+                    GroupBox("Signal Analysis") {
+                        Toggle("Synthwave perspective grid", isOn: $signalSynthwaveGrid)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+
+                GroupBox("Typography") {
+                    VStack(spacing: 9) {
+                        editorSlider("Primary", value: $layouts.fontScale, range: 0.75...2.0)
+                        editorSlider("Secondary", value: $layouts.secondaryFontScale, range: 0.65...2.0)
+                        editorSlider("Other", value: $layouts.auxiliaryFontScale, range: 0.65...2.0)
+                    }
+                }
+
+                if scene == .radar {
+                    GroupBox("Radar shape") {
+                        VStack(spacing: 9) {
+                            editorSlider("Width", value: $radarWidthCorrection, range: 0.70...1.35)
+                            editorSlider("Height", value: $radarHeightCorrection, range: 0.70...1.35)
+                        }
+                    }
+                } else if scene == .system {
+                    GroupBox("Globe shape") {
+                        VStack(spacing: 9) {
+                            editorSlider("Width", value: $globeWidthCorrection, range: 0.70...1.35)
+                            editorSlider("Height", value: $globeHeightCorrection, range: 0.70...1.35)
+                        }
+                    }
+                }
+
+                GroupBox("Modules") {
+                    VStack(alignment: .leading, spacing: 7) {
                         ForEach(LayoutDefaults.modules(for: scene)) { module in
                             let value = layouts.frame(scene, module.id)
                             HStack {
@@ -322,18 +329,34 @@ struct LayoutEditorView: View {
                                 Spacer()
                             }
                         }
-                        Divider()
-                        Text("Drag inside the selected outline to move. Drag the yellow corner handle to resize.")
-                            .font(.caption).foregroundStyle(.secondary)
-                        if let module = LayoutDefaults.modules(for: scene).first(where: { $0.id == selection }) {
-                            moduleControls(module)
-                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(width: 210, height: 367)
+
+                if let module = LayoutDefaults.modules(for: scene).first(where: { $0.id == selection }) {
+                    moduleControls(module)
+                } else {
+                    Text("Click a module to select it. Click empty canvas space to clear the selection.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
-        .padding(16)
+        .frame(width: 290, height: 540 * scale)
+    }
+
+    private func editorSlider(
+        _ title: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>
+    ) -> some View {
+        HStack(spacing: 8) {
+            Text(title).frame(width: 68, alignment: .leading)
+            Slider(value: value, in: range)
+            Text("\(Int(value.wrappedValue * 100))%")
+                .monospacedDigit()
+                .frame(width: 42, alignment: .trailing)
+        }
     }
 
     private var editorCanvas: some View {
@@ -464,6 +487,7 @@ struct LayoutEditorView: View {
                     updated.x += dx
                     updated.y += dy
                 }
+                if snapEnabled { updated = snapped(updated, kind: interactionKind) }
                 layouts.previewInteraction(scene, module: module, frame: updated)
             }
             .onEnded { _ in
@@ -486,6 +510,19 @@ struct LayoutEditorView: View {
         interactionModule = nil
         interactionKind = nil
         interactionStart = nil
+    }
+
+    private func snapped(_ value: ModuleFrame, kind: InteractionKind?) -> ModuleFrame {
+        let step = max(1, snapStep)
+        var result = value
+        if kind == .resize {
+            result.width = (result.width / step).rounded() * step
+            result.height = (result.height / step).rounded() * step
+        } else {
+            result.x = (result.x / step).rounded() * step
+            result.y = (result.y / step).rounded() * step
+        }
+        return result
     }
 
     private func previewHourlyForecast(from start: Date) -> [HourlyWeatherPoint] {
@@ -538,7 +575,7 @@ struct LayoutEditorView: View {
                 Stepper("W \(Int(value.width))", value: frameBinding(module.id, \.width), in: 70...930, step: 1)
                 Stepper("H \(Int(value.height))", value: frameBinding(module.id, \.height), in: 38...470, step: 1)
             }
-            Text("Drag changes save at mouse-up. Steppers save immediately.")
+            Text(snapEnabled ? "Dragging snaps to the \(Int(snapStep)) px grid." : "Drag changes save at mouse-up. Steppers save immediately.")
                 .font(.caption2).foregroundStyle(.secondary)
         }
         .padding(8)

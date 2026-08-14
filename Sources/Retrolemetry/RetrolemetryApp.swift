@@ -46,6 +46,12 @@ struct OutputResolutionPreset: Identifiable {
 }
 
 struct SettingsView: View {
+    private enum Page: String, CaseIterable, Identifiable {
+        case general = "General"
+        case layout = "Layout Editor"
+        var id: String { rawValue }
+    }
+
     @ObservedObject private var layouts = LayoutStore.shared
     @AppStorage("DockTelemetry.cycleDuration") private var cycleDuration = 30.0
     @AppStorage("DockTelemetry.automaticCycleEnabled") private var automaticCycleEnabled = true
@@ -68,7 +74,6 @@ struct SettingsView: View {
     @AppStorage("DockTelemetry.weatherForecastDays") private var weatherForecastDays = 5
     @AppStorage("DockTelemetry.radarWidthCorrection") private var radarWidthCorrection = 1.10
     @AppStorage("DockTelemetry.radarHeightCorrection") private var radarHeightCorrection = 0.9254
-    @AppStorage("DockTelemetry.signalSynthwaveGrid") private var signalSynthwaveGrid = false
     @AppStorage("DockTelemetry.outputResolutionPreset") private var outputResolutionPreset = OutputResolutionPreset.matchDisplay.id
     @AppStorage("DockTelemetry.customOutputWidth") private var customOutputWidth = 960
     @AppStorage("DockTelemetry.customOutputHeight") private var customOutputHeight = 540
@@ -83,6 +88,7 @@ struct SettingsView: View {
     @State private var marketKeyConfigured = false
     @State private var marketCredentialMessage: String?
     @State private var cycleDurationDraft = ""
+    @State private var page: Page = .general
 
     private var screens: [NSScreen] {
         _ = displayRefresh
@@ -100,8 +106,25 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        TabView {
-          Form {
+        VStack(spacing: 0) {
+            HStack {
+                Picker("Settings page", selection: $page) {
+                    ForEach(Page.allCases) { page in
+                        Text(page.rawValue).tag(page)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 300)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(.bar)
+
+            Divider()
+
+            if page == .general {
+              Form {
             Section("Display") {
                 Picker("Default display", selection: $selectedDisplayID) {
                     Text("Automatic — smallest external display").tag(0)
@@ -231,27 +254,21 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("Signal analysis") {
-                Toggle("Synthwave perspective grid", isOn: $signalSynthwaveGrid)
-                Text("Replaces the flat scope grid with a receding animated wave grid. Its travel speed follows live CPU load.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
             Section("Typography") {
                 LabeledContent("Primary values") {
-                    Slider(value: $layouts.fontScale, in: 0.75...1.45).frame(width: 220)
+                    Slider(value: $layouts.fontScale, in: 0.75...2.0).frame(width: 260)
                 }
                 Text("Primary \(Int(layouts.fontScale * 100))%")
                     .font(.system(.caption2, design: .monospaced))
                     .foregroundStyle(.secondary)
                 LabeledContent("Secondary text") {
-                    Slider(value: $layouts.secondaryFontScale, in: 0.65...1.45).frame(width: 220)
+                    Slider(value: $layouts.secondaryFontScale, in: 0.65...2.0).frame(width: 260)
                 }
                 Text("Labels and headings \(Int(layouts.secondaryFontScale * 100))%")
                     .font(.system(.caption2, design: .monospaced))
                     .foregroundStyle(.secondary)
                 LabeledContent("Other text") {
-                    Slider(value: $layouts.auxiliaryFontScale, in: 0.65...1.45).frame(width: 220)
+                    Slider(value: $layouts.auxiliaryFontScale, in: 0.65...2.0).frame(width: 260)
                 }
                 Text("Chrome, status, and remaining text \(Int(layouts.auxiliaryFontScale * 100))%")
                     .font(.system(.caption2, design: .monospaced))
@@ -352,15 +369,13 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-          }
-          .formStyle(.grouped)
-          .padding(12)
-          .tabItem { Label("General", systemImage: "gearshape") }
-
-          LayoutEditorView()
-              .tabItem { Label("Layout Editor", systemImage: "rectangle.3.group") }
+              }
+              .formStyle(.grouped)
+            } else {
+              LayoutEditorView()
+            }
         }
-        .frame(width: 920, height: 650)
+        .frame(width: 1040, height: 720)
         .onAppear {
             selectedDisplayID = UserDefaults.standard.integer(forKey: DisplayPreference.idKey)
             launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -491,6 +506,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             "DockTelemetry.radarWidthCorrection": 1.10,
             "DockTelemetry.radarHeightCorrection": 0.9254256185,
             "DockTelemetry.signalSynthwaveGrid": false,
+            "DockTelemetry.layoutSnapEnabled": false,
+            "DockTelemetry.layoutSnapStep": 10.0,
             "DockTelemetry.outputResolutionPreset": OutputResolutionPreset.matchDisplay.id,
             "DockTelemetry.customOutputWidth": 960,
             "DockTelemetry.customOutputHeight": 540,
@@ -801,7 +818,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
     override init() {
         window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 920, height: 650),
+            contentRect: NSRect(x: 0, y: 0, width: 1040, height: 720),
             styleMask: [.titled, .closable, .resizable],
             backing: .buffered,
             defer: false
