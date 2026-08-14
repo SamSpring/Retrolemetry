@@ -4,6 +4,8 @@ All notable changes to Retrolemetry will be documented here. This project follow
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-14
+
 ### Added
 
 - First public macOS release preparation
@@ -43,4 +45,5 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Signal grids now span beyond the viewport, show the selected live input in the header, and use stronger data-driven terrain motion with a synthwave-pink horizon
 - The layout editor now uses its lower workspace for typography, modules, and selected-module controls instead of a narrow scrolling sidebar
 
-[Unreleased]: https://github.com/SamSpring/Retrolemetry/commits/main
+[Unreleased]: https://github.com/SamSpring/Retrolemetry/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/SamSpring/Retrolemetry/releases/tag/v1.0.0

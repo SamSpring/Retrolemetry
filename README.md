@@ -2,7 +2,11 @@
 
 Retrolemetry turns a secondary Mac display into a native, animated system console. Its composition is designed at 960×540, then scales proportionally to Mac, iPad/Sidecar, phone-landscape, and custom display sizes without distorting the layout. It stays out of the Dock and uses SwiftUI and AppKit—no Electron or web view.
 
-> Screenshots are coming with the first release. Image sources belong in [`assets/screenshots`](assets/screenshots/).
+![Retrolemetry Signal Analysis](assets/screenshots/retrolemetry-signal-analysis.png)
+
+![Retrolemetry Local Weather Radar](assets/screenshots/retrolemetry-local-weather-radar.png)
+
+![Retrolemetry Live System Metrics](assets/screenshots/retrolemetry-live-system-metrics.png)
 
 ## Features
 
@@ -30,7 +34,7 @@ Retrolemetry turns a secondary Mac display into a native, animated system consol
 - Radar aspect-ratio calibration for unusual physical screens
 - Editable Finnhub watch symbols with a Keychain-protected personal API key
 - Three configurable market-panel world clocks with automatic daylight-saving changes
-- Optional animated synthwave perspective grid in Signal Analysis, with travel speed driven by live CPU load
+- Optional animated synthwave perspective grid in Signal Analysis, with selectable patterns and CPU, system-load, network, or disk response
 - Settings export, menu-bar controls, Launch at Login, and a `SIGUSR1` automation toggle
 
 GPU utilization and temperatures are intentionally omitted because macOS does not provide stable public APIs suitable for this lightweight implementation.
@@ -105,7 +109,7 @@ Live market data is also optional. Retrolemetry sends only the configured ticker
 
 ## Support
 
-If Retrolemetry is useful to you, you can support future development here: **[Ko-fi link coming soon]**.
+If Retrolemetry is useful to you, you can [support future development on Ko-fi](https://ko-fi.com/samspring).
 
 Bug reports and focused feature requests are welcome in [GitHub Issues](https://github.com/SamSpring/Retrolemetry/issues).
 

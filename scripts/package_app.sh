@@ -51,6 +51,7 @@ rm -f "$ARCHIVE"
 (cd "$STAGING_DIR" && COPYFILE_DISABLE=1 /usr/bin/zip -qry "$ARCHIVE" "$APP_NAME.app")
 rm -rf "$OUTPUT_APP"
 ditto --norsrc "$APP_BUNDLE" "$OUTPUT_APP"
+xattr -cr "$OUTPUT_APP"
 
 echo "Created $OUTPUT_APP"
 echo "Created $ARCHIVE"

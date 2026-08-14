@@ -83,7 +83,7 @@ final class WeatherModel: NSObject, ObservableObject, CLLocationManagerDelegate 
 
     private func applyLocation(latitude: Double, longitude: Double) {
         coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-        snapshot.location = String(format: "LOCAL %.2f° %.2f°", latitude, longitude)
+        snapshot.location = "LOCAL WEATHER"
         refresh()
     }
 
