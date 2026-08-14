@@ -226,6 +226,8 @@ struct LayoutEditorView: View {
     @StateObject private var marketPreview = MarketModel(preview: true)
     @AppStorage("DockTelemetry.radarWidthCorrection") private var radarWidthCorrection = 1.10
     @AppStorage("DockTelemetry.radarHeightCorrection") private var radarHeightCorrection = 0.9254
+    @AppStorage("DockTelemetry.radarTargetMode") private var radarTargetModeRaw = RadarTargetMode.precipitation.rawValue
+    @AppStorage("DockTelemetry.radarTargetPulse") private var radarTargetPulse = true
     @AppStorage("DockTelemetry.globeWidthCorrection") private var globeWidthCorrection = 1.10
     @AppStorage("DockTelemetry.globeHeightCorrection") private var globeHeightCorrection = 0.9254
     @AppStorage("DockTelemetry.signalSynthwaveGrid") private var signalSynthwaveGrid = false
@@ -267,110 +269,126 @@ struct LayoutEditorView: View {
                 editorCanvas
                 editorInspector
             }
+            editorBottomTray
         }
         .padding(18)
     }
 
     private var editorInspector: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                GroupBox("Layout") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Toggle("Snap while dragging", isOn: $snapEnabled)
-                        Picker("Grid", selection: $snapStep) {
-                            Text("5 px").tag(5.0)
-                            Text("10 px").tag(10.0)
-                            Text("20 px").tag(20.0)
+        VStack(alignment: .leading, spacing: 12) {
+            GroupBox("Layout") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle("Snap while dragging", isOn: $snapEnabled)
+                    Picker("Grid", selection: $snapStep) {
+                        Text("5 px").tag(5.0)
+                        Text("10 px").tag(10.0)
+                        Text("20 px").tag(20.0)
+                    }
+                    .disabled(!snapEnabled)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if scene == .signal {
+                GroupBox("Signal Analysis") {
+                    VStack(alignment: .leading, spacing: 9) {
+                        Toggle("Synthwave perspective grid", isOn: $signalSynthwaveGrid)
+                        Group {
+                            Toggle("Animate grid", isOn: $signalGridAnimationEnabled)
+                            Picker("Pattern", selection: $signalGridPatternRaw) {
+                                ForEach(SignalGridPattern.allCases) { pattern in
+                                    Text(pattern.title).tag(pattern.rawValue)
+                                }
+                            }
+                            Picker("Respond to", selection: $signalGridMetricRaw) {
+                                ForEach(SignalGridMetric.allCases) { metric in
+                                    Text(metric.title).tag(metric.rawValue)
+                                }
+                            }
+                            Picker("Frequency response", selection: $signalGridResponseRaw) {
+                                ForEach(SignalGridResponse.allCases) { response in
+                                    Text(response.title).tag(response.rawValue)
+                                }
+                            }
+                            Text("GPU uses normalized system load because macOS has no stable public GPU-utilization API.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
-                        .disabled(!snapEnabled)
+                        .disabled(!signalSynthwaveGrid)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-
-                if scene == .signal {
-                    GroupBox("Signal Analysis") {
-                        VStack(alignment: .leading, spacing: 9) {
-                            Toggle("Synthwave perspective grid", isOn: $signalSynthwaveGrid)
-                            Group {
-                                Toggle("Animate grid", isOn: $signalGridAnimationEnabled)
-                                Picker("Pattern", selection: $signalGridPatternRaw) {
-                                    ForEach(SignalGridPattern.allCases) { pattern in
-                                        Text(pattern.title).tag(pattern.rawValue)
-                                    }
-                                }
-                                Picker("Respond to", selection: $signalGridMetricRaw) {
-                                    ForEach(SignalGridMetric.allCases) { metric in
-                                        Text(metric.title).tag(metric.rawValue)
-                                    }
-                                }
-                                Picker("Frequency response", selection: $signalGridResponseRaw) {
-                                    ForEach(SignalGridResponse.allCases) { response in
-                                        Text(response.title).tag(response.rawValue)
-                                    }
-                                }
-                                Text("GPU uses normalized system load because macOS has no stable public GPU-utilization API.")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .disabled(!signalSynthwaveGrid)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-
-                GroupBox("Typography") {
+            } else if scene == .radar {
+                GroupBox("Radar") {
                     VStack(spacing: 9) {
-                        editorSlider("Primary", value: $layouts.fontScale, range: 0.75...2.0)
-                        editorSlider("Secondary", value: $layouts.secondaryFontScale, range: 0.65...2.0)
-                        editorSlider("Other", value: $layouts.auxiliaryFontScale, range: 0.65...2.0)
-                    }
-                }
-
-                if scene == .radar {
-                    GroupBox("Radar shape") {
-                        VStack(spacing: 9) {
-                            editorSlider("Width", value: $radarWidthCorrection, range: 0.70...1.35)
-                            editorSlider("Height", value: $radarHeightCorrection, range: 0.70...1.35)
-                        }
-                    }
-                } else if scene == .system {
-                    GroupBox("Globe shape") {
-                        VStack(spacing: 9) {
-                            editorSlider("Width", value: $globeWidthCorrection, range: 0.70...1.35)
-                            editorSlider("Height", value: $globeHeightCorrection, range: 0.70...1.35)
-                        }
-                    }
-                }
-
-                GroupBox("Modules") {
-                    VStack(alignment: .leading, spacing: 7) {
-                        ForEach(LayoutDefaults.modules(for: scene)) { module in
-                            let value = layouts.frame(scene, module.id)
-                            HStack {
-                                Toggle("", isOn: Binding(
-                                    get: { value.visible },
-                                    set: { layouts.setVisible($0, scene: scene, module: module.id) }
-                                )).labelsHidden()
-                                Button(module.name) { selection = module.id }
-                                    .buttonStyle(.plain)
-                                    .foregroundStyle(selection == module.id ? Color.accentColor : Color.primary)
-                                Spacer()
+                        editorSlider("Width", value: $radarWidthCorrection, range: 0.70...1.35)
+                        editorSlider("Height", value: $radarHeightCorrection, range: 0.70...1.35)
+                        Picker("Targets", selection: $radarTargetModeRaw) {
+                            ForEach(RadarTargetMode.allCases) { mode in
+                                Text(mode.title).tag(mode.rawValue)
                             }
                         }
+                        Toggle("Pulse targets", isOn: $radarTargetPulse)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+            } else if scene == .system {
+                GroupBox("Globe shape") {
+                    VStack(spacing: 9) {
+                        editorSlider("Width", value: $globeWidthCorrection, range: 0.70...1.35)
+                        editorSlider("Height", value: $globeHeightCorrection, range: 0.70...1.35)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(width: 290, height: 540 * scale)
+    }
 
+    private var editorBottomTray: some View {
+        HStack(alignment: .top, spacing: 12) {
+            GroupBox("Typography") {
+                VStack(spacing: 9) {
+                    editorSlider("Primary", value: $layouts.fontScale, range: 0.75...2.0)
+                    editorSlider("Secondary", value: $layouts.secondaryFontScale, range: 0.65...2.0)
+                    editorSlider("Other", value: $layouts.auxiliaryFontScale, range: 0.65...2.0)
+                }
+            }
+            .frame(width: 310)
+
+            GroupBox("Modules") {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 7) {
+                    ForEach(LayoutDefaults.modules(for: scene)) { module in
+                        let value = layouts.frame(scene, module.id)
+                        HStack(spacing: 5) {
+                            Toggle("", isOn: Binding(
+                                get: { value.visible },
+                                set: { layouts.setVisible($0, scene: scene, module: module.id) }
+                            )).labelsHidden()
+                            Button(module.name) { selection = module.id }
+                                .buttonStyle(.plain)
+                                .lineLimit(1)
+                                .foregroundStyle(selection == module.id ? Color.accentColor : Color.primary)
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(width: 360)
+
+            GroupBox("Selected module") {
                 if let module = LayoutDefaults.modules(for: scene).first(where: { $0.id == selection }) {
                     moduleControls(module)
                 } else {
                     Text("Click a module to select it. Click empty canvas space to clear the selection.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
+            .frame(maxWidth: .infinity)
         }
-        .frame(width: 290, height: 540 * scale)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func editorSlider(

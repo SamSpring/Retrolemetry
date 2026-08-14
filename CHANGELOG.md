@@ -27,6 +27,7 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Reproducible `.app` bundle packaging, Developer ID signing hooks, and notarization workflow
 - Optional 5/10/20-pixel snapping for moving and resizing modules in the layout editor
 - Signal-grid animation controls for motion, telemetry source, pattern, and response speed
+- Weather-driven radar targets for precipitation, temperature, and wind, plus optional target pulsing
 
 ### Changed
 
@@ -40,5 +41,6 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - All three typography controls now support scaling up to 200%
 - Settings now use one AppKit-owned window, preventing duplicate windows after backup export and eliminating unused top space
 - Signal grids now span beyond the viewport, show the selected live input in the header, and use stronger data-driven terrain motion with a synthwave-pink horizon
+- The layout editor now uses its lower workspace for typography, modules, and selected-module controls instead of a narrow scrolling sidebar
 
 [Unreleased]: https://github.com/SamSpring/Retrolemetry/commits/main

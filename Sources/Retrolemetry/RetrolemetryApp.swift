@@ -518,6 +518,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             "DockTelemetry.globeHeightCorrection": 0.9254256185,
             "DockTelemetry.radarWidthCorrection": 1.10,
             "DockTelemetry.radarHeightCorrection": 0.9254256185,
+            "DockTelemetry.radarTargetMode": RadarTargetMode.precipitation.rawValue,
+            "DockTelemetry.radarTargetPulse": true,
             "DockTelemetry.signalSynthwaveGrid": false,
             "DockTelemetry.signalGridAnimationEnabled": true,
             "DockTelemetry.signalGridMetric": SignalGridMetric.cpu.rawValue,

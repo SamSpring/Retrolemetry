@@ -1011,12 +1011,86 @@ private func clockTime(_ date: Date, identifier: String) -> String {
     return date.formatted(style)
 }
 
+enum RadarTargetMode: String, CaseIterable, Identifiable {
+    case precipitation, temperature, wind, decorative
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .precipitation: "PRECIPITATION // 12H"
+        case .temperature: "TEMPERATURE // 12H"
+        case .wind: "WIND FIELD"
+        case .decorative: "DECORATIVE CONTACTS"
+        }
+    }
+    var shortTitle: String {
+        switch self {
+        case .precipitation: "RAIN CELLS"
+        case .temperature: "TEMP NODES"
+        case .wind: "WIND FIELD"
+        case .decorative: "CONTACTS"
+        }
+    }
+}
+
+private struct RadarTargetSample {
+    let angle: Double
+    let radius: Double
+    let intensity: Double
+}
+
+private func radarTargets(for weather: WeatherSnapshot, mode: RadarTargetMode) -> [RadarTargetSample] {
+    switch mode {
+    case .precipitation:
+        return Array(weather.precipitationForecast.prefix(12)).enumerated().map { index, chance in
+            RadarTargetSample(
+                angle: -82 + Double(index) * 31,
+                radius: 0.22 + Double(index) / 16,
+                intensity: min(1, max(0.06, chance))
+            )
+        }
+    case .temperature:
+        return Array(weather.temperatureForecast.prefix(12)).enumerated().map { index, level in
+            RadarTargetSample(
+                angle: -70 + Double(index) * 47,
+                radius: 0.26 + Double((index * 7) % 9) / 14,
+                intensity: min(1, max(0.10, level))
+            )
+        }
+    case .wind:
+        let level = min(1, max(0, weather.windSpeed / 45))
+        let count = max(2, Int((level * 10).rounded()) + 2)
+        return (0..<count).map { index in
+            RadarTargetSample(
+                angle: Double(index * 71) + weather.windSpeed * 1.8,
+                radius: 0.24 + Double((index * 29) % 62) / 100,
+                intensity: max(0.14, level)
+            )
+        }
+    case .decorative:
+        return (0..<7).map { index in
+            RadarTargetSample(
+                angle: Double(index * 53),
+                radius: 0.25 + Double((index * 37) % 65) / 100,
+                intensity: 0.82
+            )
+        }
+    }
+}
+
 struct RadarScene: View {
     let weather: WeatherSnapshot
     let time: Double
     @AppStorage("DockTelemetry.weatherForecastDays") private var weatherForecastDays = 5
     @AppStorage("DockTelemetry.radarWidthCorrection") private var radarWidthCorrection = 1.10
     @AppStorage("DockTelemetry.radarHeightCorrection") private var radarHeightCorrection = 0.9254
+    @AppStorage("DockTelemetry.radarTargetMode") private var radarTargetModeRaw = RadarTargetMode.precipitation.rawValue
+    @AppStorage("DockTelemetry.radarTargetPulse") private var radarTargetPulse = true
+
+    private var radarTargetMode: RadarTargetMode {
+        RadarTargetMode(rawValue: radarTargetModeRaw) ?? .precipitation
+    }
+
     var body: some View {
         ZStack {
             FrameChrome(title: "LOCAL WEATHER RADAR", section: "WX", time: time)
@@ -1039,11 +1113,44 @@ struct RadarScene: View {
                     var line = Path(); line.move(to: center); line.addLine(to: point(center: center, radius: radius, angle: angle))
                     context.stroke(line, with: .color(phosphor.opacity(0.75 * (1 - Double(trail)/16))), lineWidth: 2)
                 }
-                for index in 0..<7 {
-                    let angle = Double(index * 53) + sin(time * 0.15 + Double(index)) * 15
-                    let r = radius * (0.25 + Double((index * 37) % 65) / 100)
-                    let p = point(center: center, radius: r, angle: angle)
-                    context.fill(Path(ellipseIn: CGRect(x: p.x-3, y: p.y-3, width: 6, height: 6)), with: .color(phosphor))
+                let targets = radarTargets(for: weather, mode: radarTargetMode)
+                for (index, target) in targets.enumerated() {
+                    let drift = radarTargetMode == .decorative ? sin(time * 0.15 + Double(index)) * 15 : 0
+                    let p = point(center: center, radius: radius * target.radius, angle: target.angle + drift)
+                    let pulse = radarTargetPulse ? 0.76 + (sin(time * 3.1 + Double(index) * 0.78) + 1) * 0.25 : 1
+                    let targetRadius = (2.1 + target.intensity * 5.6) * pulse
+                    let opacity = 0.20 + target.intensity * 0.80
+                    if radarTargetPulse {
+                        let haloRadius = targetRadius * 1.9
+                        context.stroke(
+                            Path(ellipseIn: CGRect(x: p.x-haloRadius, y: p.y-haloRadius, width: haloRadius*2, height: haloRadius*2)),
+                            with: .color(phosphor.opacity(opacity * 0.32)),
+                            lineWidth: 0.8
+                        )
+                    }
+                    switch radarTargetMode {
+                    case .precipitation, .decorative:
+                        context.fill(
+                            Path(ellipseIn: CGRect(x: p.x-targetRadius, y: p.y-targetRadius, width: targetRadius*2, height: targetRadius*2)),
+                            with: .color(phosphor.opacity(opacity))
+                        )
+                    case .temperature:
+                        var diamond = Path()
+                        diamond.move(to: CGPoint(x: p.x, y: p.y-targetRadius))
+                        diamond.addLine(to: CGPoint(x: p.x+targetRadius, y: p.y))
+                        diamond.addLine(to: CGPoint(x: p.x, y: p.y+targetRadius))
+                        diamond.addLine(to: CGPoint(x: p.x-targetRadius, y: p.y))
+                        diamond.closeSubpath()
+                        context.stroke(diamond, with: .color(phosphor.opacity(opacity)), lineWidth: 1.4)
+                    case .wind:
+                        let heading = target.angle * .pi / 180
+                        let dx = cos(heading) * targetRadius * 1.8
+                        let dy = sin(heading) * targetRadius * 1.8
+                        var streak = Path()
+                        streak.move(to: CGPoint(x: p.x-dx, y: p.y-dy))
+                        streak.addLine(to: CGPoint(x: p.x+dx, y: p.y+dy))
+                        context.stroke(streak, with: .color(phosphor.opacity(opacity)), lineWidth: 1.8)
+                    }
                 }
               }
               .scaleEffect(x: radarWidthCorrection, y: radarHeightCorrection, anchor: .center)
@@ -1080,7 +1187,7 @@ struct RadarScene: View {
                 HStack {
                     Text(weather.status)
                     Spacer()
-                    Text("RADAR SWEEP 042°/S")
+                    Text("\(radarTargetMode.shortTitle) \(radarTargets(for: weather, mode: radarTargetMode).count) // \(radarTargetPulse ? "PULSE" : "STEADY")")
                 }
                 .font(consoleAuxiliaryFont(10, weight: .bold))
             }
