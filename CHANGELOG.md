@@ -4,6 +4,8 @@ All notable changes to Retrolemetry will be documented here. This project follow
 
 ## [Unreleased]
 
+- Added click-to-cycle Today, Week, Month, and Year ranges to the Market Watch focus chart
+
 ## [1.0.0] - 2026-08-14
 
 ### Added

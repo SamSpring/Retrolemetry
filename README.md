@@ -14,7 +14,7 @@ Retrolemetry turns a secondary Mac display into a native, animated system consol
 
 - CPU, memory, disk, network, load average, and uptime telemetry
 - Four views: System Telemetry, Sector Scan, Signal Analysis, and Live System Metrics
-- A dedicated live stock-market screen with a rotating globe, separate world clocks, two five-symbol ticker boards, a focus chart, and a compact USD→ILS reference-rate history
+- A dedicated live stock-market screen with a rotating globe, separate world clocks, two five-symbol ticker boards, a click-to-cycle Today/Week/Month/Year focus chart, and a compact USD→ILS reference-rate history
 - Green-phosphor and synthwave themes, plus adjustable bloom, scan bands, noise, vignette, and dual VHS tracking lines
 - Local conditions, a 12-hour temperature/precipitation forecast, and a configurable 3–7-day outlook
 
@@ -105,7 +105,7 @@ Retrolemetry has no accounts, analytics, advertising, or bundled tracking SDKs. 
 
 Weather is optional. When location access is allowed, Core Location provides an approximate coordinate and Retrolemetry sends that coordinate to the [Open-Meteo](https://open-meteo.com/) forecast API over HTTPS. The app does not include a weather API key and does not store a location history. Denying location access leaves the weather panel unavailable without affecting system telemetry.
 
-Live market data is also optional. Retrolemetry sends only the configured ticker symbols directly to Finnhub and stores the user's personal Finnhub API key in macOS Keychain. The key is never written to preferences, exported settings, source control, or release archives. The USD→ILS panel requests public daily reference-rate history from [Frankfurter](https://frankfurter.dev/) and is explicitly labeled as daily data, not a live trading quote. Quotes are informational and are not trading advice.
+Live market data is also optional. Retrolemetry sends only the configured ticker symbols directly to Finnhub and stores the user's personal Finnhub API key in macOS Keychain. The key is never written to preferences, exported settings, source control, or release archives. Focus-chart requests send only the selected ticker symbol to Yahoo's public, no-login chart endpoint; Retrolemetry never connects to a Yahoo account or portfolio. The USD→ILS panel requests public daily reference-rate history from [Frankfurter](https://frankfurter.dev/) and is explicitly labeled as daily data, not a live trading quote. Quotes are informational and are not trading advice.
 
 ## Support
 

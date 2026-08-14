@@ -142,6 +142,7 @@ struct ConsoleView: View {
     @State private var transitionDirection = 1
     @State private var transitionGeneration = 0
     @State private var nextSwitch = Date().addingTimeInterval(24)
+    @State private var marketTimeframe: MarketTimeframe = .today
     private let sceneClock = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -173,6 +174,11 @@ struct ConsoleView: View {
                 }
                 HorizontalScrollCapture { direction in
                     moveScene(direction)
+                } onClick: { point in
+                    guard activeScene == .system else { return }
+                    let focus = layouts.frame(.system, "marketFocus")
+                    guard focus.visible, focus.rect.contains(point) else { return }
+                    marketTimeframe = marketTimeframe.next
                 }
                 .frame(width: 960, height: 540)
             }
@@ -323,7 +329,7 @@ struct ConsoleView: View {
     private func sceneView(_ scene: ConsoleScene, time: Double) -> some View {
         switch scene {
         case .system:
-            SystemScene(market: market, time: time)
+            SystemScene(market: market, time: time, timeframe: marketTimeframe)
         case .radar:
             RadarScene(
                 weather: weather.snapshot,
@@ -437,24 +443,34 @@ private struct SyncRollBand: View {
 
 struct HorizontalScrollCapture: NSViewRepresentable {
     let onScroll: (Int) -> Void
+    let onClick: (CGPoint) -> Void
 
     func makeNSView(context: Context) -> HorizontalScrollView {
         let view = HorizontalScrollView()
         view.onScroll = onScroll
+        view.onClick = onClick
         return view
     }
 
     func updateNSView(_ nsView: HorizontalScrollView, context: Context) {
         nsView.onScroll = onScroll
+        nsView.onClick = onClick
     }
 }
 
 final class HorizontalScrollView: NSView {
     var onScroll: ((Int) -> Void)?
+    var onClick: ((CGPoint) -> Void)?
     private var accumulated: CGFloat = 0
     private var lastSwitch = Date.distantPast
 
     override var acceptsFirstResponder: Bool { false }
+
+    override func mouseDown(with event: NSEvent) {
+        let local = convert(event.locationInWindow, from: nil)
+        let point = CGPoint(x: local.x, y: isFlipped ? local.y : bounds.height - local.y)
+        onClick?(point)
+    }
 
     override func scrollWheel(with event: NSEvent) {
         let horizontal = event.scrollingDeltaX
@@ -517,6 +533,7 @@ struct FrameChrome: View {
 struct SystemScene: View {
     @ObservedObject var market: MarketModel
     let time: Double
+    var timeframe: MarketTimeframe = .today
 
     var body: some View {
         ZStack {
@@ -525,7 +542,7 @@ struct SystemScene: View {
                 WireGlobe(time: time)
             }
             LayoutModuleContainer(scene: .system, module: "marketFocus") {
-                MarketFocusPanel(market: market, time: time)
+                MarketFocusPanel(market: market, time: time, timeframe: timeframe)
             }
             LayoutModuleContainer(scene: .system, module: "marketClocks") {
                 MarketWorldClocks(time: time)
@@ -783,14 +800,15 @@ struct WireGlobe: View {
 struct MarketFocusPanel: View {
     @ObservedObject var market: MarketModel
     let time: Double
+    let timeframe: MarketTimeframe
 
     var body: some View {
         let symbol = activeSymbol
         VStack(alignment: .leading, spacing: 7) {
             HStack {
-                Text("MARKET FEED // FINNHUB")
+                Text("MARKET FEED // \(timeframe.label)")
                 Spacer()
-                Text(market.state.label)
+                Text("\(market.state.label) // CLICK")
             }
             .font(consoleAuxiliaryFont(9, weight: .bold))
             .foregroundStyle(dimPhosphor)
@@ -812,14 +830,34 @@ struct MarketFocusPanel: View {
                         .font(consoleAuxiliaryFont(8, weight: .bold))
                         .foregroundStyle(dimPhosphor)
                 }
-                MarketTrace(values: market.histories[symbol] ?? [], quote: quote)
+                let chartValues = market.chartValues(for: symbol, timeframe: timeframe)
+                MarketTrace(values: chartValues, quote: quote, includeDayRange: timeframe == .today)
                     .frame(maxHeight: .infinity)
+                    .overlay(alignment: .topTrailing) {
+                        if market.isLoadingChart(for: symbol, timeframe: timeframe) {
+                            Text("LOADING \(timeframe.label)")
+                                .font(consoleAuxiliaryFont(7, weight: .bold))
+                                .foregroundStyle(dimPhosphor)
+                                .padding(4)
+                        } else if market.isChartUnavailable(for: symbol, timeframe: timeframe), chartValues.isEmpty {
+                            Text("RANGE UNAVAILABLE")
+                                .font(consoleAuxiliaryFont(7, weight: .bold))
+                                .foregroundStyle(dimPhosphor)
+                                .padding(4)
+                        }
+                    }
                 HStack {
-                    Text("O \(marketPrice(quote.open))")
+                    Text(timeframe == .today
+                         ? "O \(marketPrice(quote.open))"
+                         : "START \(marketPrice(chartValues.first ?? quote.previousClose))")
                     Spacer()
-                    Text("L \(marketPrice(quote.low))")
+                    Text(timeframe == .today
+                         ? "L \(marketPrice(quote.low))"
+                         : "LOW \(marketPrice(chartValues.min() ?? quote.low))")
                     Spacer()
-                    Text("H \(marketPrice(quote.high))")
+                    Text(timeframe == .today
+                         ? "H \(marketPrice(quote.high))"
+                         : "HIGH \(marketPrice(chartValues.max() ?? quote.high))")
                 }
                 .font(consoleAuxiliaryFont(8, weight: .bold))
             } else {
@@ -837,6 +875,13 @@ struct MarketFocusPanel: View {
         }
         .padding(11)
         .overlay(Rectangle().stroke(dimPhosphor.opacity(0.95), lineWidth: 1.1))
+        .task(id: "\(symbol ?? "none"):\(timeframe.rawValue)") {
+            guard let symbol else { return }
+            while !Task.isCancelled {
+                await market.loadChart(for: symbol, timeframe: timeframe)
+                try? await Task.sleep(for: .seconds(timeframe.refreshInterval))
+            }
+        }
     }
 
     private var activeSymbol: String? {
@@ -848,13 +893,14 @@ struct MarketFocusPanel: View {
 struct MarketTrace: View {
     let values: [Double]
     let quote: MarketQuote
+    var includeDayRange = true
 
     var body: some View {
         Canvas { context, size in
             drawGrid(context: &context, size: size, columns: 6, rows: 3, strength: 0.48)
             let samples = values.count > 1 ? values : [quote.previousClose, quote.price]
-            let low = min(samples.min() ?? quote.low, quote.low)
-            let high = max(samples.max() ?? quote.high, quote.high)
+            let low = includeDayRange ? min(samples.min() ?? quote.low, quote.low) : (samples.min() ?? quote.low)
+            let high = includeDayRange ? max(samples.max() ?? quote.high, quote.high) : (samples.max() ?? quote.high)
             let span = max(0.0001, high - low)
             var path = Path()
             for (index, value) in samples.enumerated() {

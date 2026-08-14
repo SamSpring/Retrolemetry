@@ -21,6 +21,55 @@ struct FXRatePoint: Identifiable, Sendable {
     var id: Date { date }
 }
 
+enum MarketTimeframe: String, CaseIterable, Sendable {
+    case today
+    case week
+    case month
+    case year
+
+    var label: String {
+        switch self {
+        case .today: "TODAY"
+        case .week: "1 WEEK"
+        case .month: "1 MONTH"
+        case .year: "1 YEAR"
+        }
+    }
+
+    var next: MarketTimeframe {
+        let values = Self.allCases
+        let index = values.firstIndex(of: self) ?? 0
+        return values[(index + 1) % values.count]
+    }
+
+    var yahooRange: String {
+        switch self {
+        case .today: "1d"
+        case .week: "5d"
+        case .month: "1mo"
+        case .year: "1y"
+        }
+    }
+
+    var yahooInterval: String {
+        switch self {
+        case .today: "5m"
+        case .week: "30m"
+        case .month: "1d"
+        case .year: "1wk"
+        }
+    }
+
+    var refreshInterval: TimeInterval {
+        switch self {
+        case .today: 120
+        case .week: 600
+        case .month: 1_800
+        case .year: 3_600
+        }
+    }
+}
+
 enum MarketFeedState: Equatable {
     case needsAPIKey
     case loading
@@ -153,6 +202,9 @@ struct MarketClockZone: Identifiable, Hashable {
 final class MarketModel: ObservableObject {
     @Published private(set) var quotes: [String: MarketQuote] = [:]
     @Published private(set) var histories: [String: [Double]] = [:]
+    @Published private(set) var rangeHistories: [String: [MarketTimeframe: [Double]]] = [:]
+    @Published private(set) var loadingRanges: Set<String> = []
+    @Published private(set) var unavailableRanges: Set<String> = []
     @Published private(set) var symbols: [String] = MarketSymbols.parse(MarketSymbols.defaultValue)
     @Published private(set) var state: MarketFeedState = .needsAPIKey
     @Published private(set) var usdIlsHistory: [FXRatePoint] = []
@@ -163,6 +215,7 @@ final class MarketModel: ObservableObject {
     private let isPreview: Bool
     private var cachedAPIKey: String?
     private var attemptedKeychainLoad = false
+    private var rangeUpdatedAt: [String: Date] = [:]
 
     init(preview: Bool = false) {
         isPreview = preview
@@ -188,6 +241,21 @@ final class MarketModel: ObservableObject {
                     previewHistory.append(price * (0.985 + trend + wave))
                 }
                 histories[symbol] = previewHistory
+                rangeHistories[symbol] = Dictionary(uniqueKeysWithValues: MarketTimeframe.allCases.map { timeframe in
+                    let count: Int
+                    switch timeframe {
+                    case .today: count = 36
+                    case .week: count = 54
+                    case .month: count = 24
+                    case .year: count = 52
+                    }
+                    let values = (0..<count).map { sample in
+                        let progress = Double(sample) / Double(max(1, count - 1))
+                        let wave = sin(Double(sample) * 0.42 + Double(index)) * 0.018
+                        return price * (0.91 + progress * 0.09 + wave)
+                    }
+                    return (timeframe, values)
+                })
             }
             state = .live(Date())
             let calendar = Calendar(identifier: .gregorian)
@@ -235,6 +303,51 @@ final class MarketModel: ObservableObject {
         cachedAPIKey = nil
         attemptedKeychainLoad = false
         start()
+    }
+
+    func chartValues(for symbol: String, timeframe: MarketTimeframe) -> [Double] {
+        if let values = rangeHistories[symbol]?[timeframe], values.count > 1 {
+            return values
+        }
+        return timeframe == .today ? (histories[symbol] ?? []) : []
+    }
+
+    func isLoadingChart(for symbol: String, timeframe: MarketTimeframe) -> Bool {
+        loadingRanges.contains(rangeKey(symbol, timeframe))
+    }
+
+    func isChartUnavailable(for symbol: String, timeframe: MarketTimeframe) -> Bool {
+        unavailableRanges.contains(rangeKey(symbol, timeframe))
+    }
+
+    func loadChart(for symbol: String, timeframe: MarketTimeframe) async {
+        guard !isPreview else { return }
+        let key = rangeKey(symbol, timeframe)
+        if loadingRanges.contains(key) { return }
+        if let updated = rangeUpdatedAt[key], Date().timeIntervalSince(updated) < timeframe.refreshInterval { return }
+
+        loadingRanges.insert(key)
+        unavailableRanges.remove(key)
+        defer { loadingRanges.remove(key) }
+        do {
+            let values = try await MarketAPI.yahooChart(symbol: symbol, timeframe: timeframe)
+            guard values.count > 1 else {
+                unavailableRanges.insert(key)
+                rangeUpdatedAt[key] = Date()
+                return
+            }
+            var ranges = rangeHistories[symbol] ?? [:]
+            ranges[timeframe] = values
+            rangeHistories[symbol] = ranges
+            rangeUpdatedAt[key] = Date()
+        } catch {
+            unavailableRanges.insert(key)
+            rangeUpdatedAt[key] = Date()
+        }
+    }
+
+    private func rangeKey(_ symbol: String, _ timeframe: MarketTimeframe) -> String {
+        "\(symbol):\(timeframe.rawValue)"
     }
 
     private func refresh() async {
@@ -364,6 +477,27 @@ private enum MarketAPI {
         .map { $0 }
     }
 
+    static func yahooChart(symbol: String, timeframe: MarketTimeframe) async throws -> [Double] {
+        let safeSymbol = symbol.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? symbol
+        var components = URLComponents(string: "https://query2.finance.yahoo.com/v8/finance/chart/\(safeSymbol)")!
+        components.queryItems = [
+            URLQueryItem(name: "range", value: timeframe.yahooRange),
+            URLQueryItem(name: "interval", value: timeframe.yahooInterval)
+        ]
+        var request = URLRequest(url: components.url!)
+        request.timeoutInterval = 12
+        request.setValue("Retrolemetry/1.0", forHTTPHeaderField: "User-Agent")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw MarketAPIError.badResponse
+        }
+        let payload = try JSONDecoder().decode(YahooChartResponse.self, from: data)
+        guard let closes = payload.chart.result?.first?.indicators.quote.first?.close else {
+            throw MarketAPIError.noChartData
+        }
+        return closes.compactMap { $0 }
+    }
+
     private struct FinnhubQuote: Decodable {
         let c: Double
         let d: Double
@@ -382,14 +516,36 @@ private enum MarketAPI {
         let rate: Double
     }
 
+    private struct YahooChartResponse: Decodable {
+        let chart: Chart
+
+        struct Chart: Decodable {
+            let result: [Result]?
+        }
+
+        struct Result: Decodable {
+            let indicators: Indicators
+        }
+
+        struct Indicators: Decodable {
+            let quote: [Quote]
+        }
+
+        struct Quote: Decodable {
+            let close: [Double?]
+        }
+    }
+
     private enum MarketAPIError: LocalizedError {
         case badResponse
         case noQuote
+        case noChartData
 
         var errorDescription: String? {
             switch self {
             case .badResponse: "Finnhub did not accept the request"
             case .noQuote: "No current quote is available"
+            case .noChartData: "No historical chart data is available"
             }
         }
     }
