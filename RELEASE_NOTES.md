@@ -7,7 +7,15 @@ Retrolemetry is a native macOS system console built for compact 960×540 seconda
 - Four animated views for telemetry, radar/weather, signal analysis, and oversized live metrics
 - Automatic external-display selection with a remembered preferred display
 - Green-phosphor and synthwave themes with configurable CRT-style effects
+- Menu-bar synthwave switching, dual adjustable VHS tracking lines, and three scene transition styles
 - A visual layout editor with module positioning, sizing, visibility, and typography controls
+- Separate typography scaling for primary values, secondary labels, and remaining chrome/status text
+- A live Finnhub market panel with editable watch symbols and secure Keychain credential storage
+- A dedicated market-watch scene with a rotating globe, separate clocks, two five-symbol ticker boards, a focus chart, and USD→ILS daily reference history
+- Configurable Florida, Los Angeles, and London world clocks with automatic daylight-saving handling
+- A richer weather view with upcoming hourly conditions and a configurable 3–7-day daily forecast
+- Configurable slideshow ordering and intervals, plus an optional CPU-driven synthwave perspective grid
+- Proportional output sizing for compact displays, Macs, iPad/Sidecar, phone-landscape adapters, and custom dimensions
 - Physical-display calibration for globe and radar proportions
 - Optional Launch at Login and BetterTouchTool-compatible show/hide automation
 
@@ -19,9 +27,11 @@ Download `Retrolemetry-1.0.0.zip`, move `Retrolemetry.app` to `/Applications`, a
 
 System telemetry stays on the Mac. If weather is enabled, an approximate coordinate is sent directly to Open-Meteo over HTTPS. Retrolemetry has no account, analytics, advertising, bundled tracking SDK, or weather API key.
 
+If live market data is configured, ticker symbols are sent directly to Finnhub and the user's personal API key remains in macOS Keychain. The USD→ILS panel requests public daily reference-rate history from Frankfurter. No market-data credential is bundled with the app or repository.
+
 ## Known limitations
 
-- The interface is fixed at 960×540 and may not fit smaller displays.
+- The interface is composed at 960×540 and scales proportionally; narrow or portrait displays may show letterboxing.
 - GPU utilization and temperature are unavailable because stable public macOS APIs are not provided for them.
 - Launch at Login requires the bundled app to be installed in a stable location such as `/Applications`.
 

@@ -21,9 +21,13 @@ enum LayoutDefaults {
     static func modules(for scene: ConsoleScene) -> [SceneModule] {
         switch scene {
         case .system:
-            [module("meters", "Load meters"), module("readouts", "Uptime / network"), module("history", "CPU history"), module("globe", "Wireframe globe"), module("globeStatus", "Globe status")]
+            [
+                module("marketFocus", "Market focus chart"), module("globe", "Rotating globe"),
+                module("marketClocks", "World clocks"), module("marketTickerA", "Ticker board A"),
+                module("marketTickerB", "Ticker board B"), module("fxGraph", "USD to ILS graph")
+            ]
         case .radar:
-            [module("radar", "Radar"), module("weatherHeader", "Weather header"), module("weatherStats", "Weather conditions"), module("temperature", "Temperature graph"), module("precipitation", "Precipitation graph"), module("weatherStatus", "Weather status")]
+            [module("radar", "Radar"), module("weatherHeader", "Weather header"), module("weatherStats", "Weather conditions"), module("temperature", "Hourly forecast"), module("precipitation", "Daily forecast"), module("weatherStatus", "Weather status")]
         case .signal:
             [module("scope", "Signal scope"), module("signalHeader", "Channel header"), module("cpuTrace", "CPU trace"), module("memoryTrace", "Memory trace"), module("networkTrace", "Network trace"), module("ioReadout", "Network I/O")]
         case .fullMetrics:
@@ -35,18 +39,19 @@ enum LayoutDefaults {
         switch scene {
         case .system:
             return [
-                "meters": frame(39.9426, 62.6756, 554.5965, 174.6376),
-                "readouts": frame(42.2403, 255.7691, 553.0455, 56.1202),
-                "history": frame(40, 331, 557.7445, 158.3580),
-                "globe": frame(631.8957, 80.5168, 290.8042, 281.9945),
-                "globeStatus": frame(630, 374, 295.1988, 114.2289)
+                "marketFocus": frame(30, 60, 360, 260),
+                "globe": frame(410, 60, 240, 260),
+                "marketClocks": frame(670, 60, 260, 120),
+                "fxGraph": frame(670, 200, 260, 120),
+                "marketTickerA": frame(30, 340, 430, 150),
+                "marketTickerB": frame(480, 340, 450, 150)
             ]
         case .radar:
             return [
                 "radar": frame(25, 55, 438.8523, 429.6496), "weatherHeader": frame(480, 58, 455, 60),
                 "weatherStats": frame(480, 130, 455, 62), "temperature": frame(480, 204, 455, 92),
-                "precipitation": frame(480, 307, 455.4481, 171.0326),
-                "weatherStatus": frame(480, 409, 457.5391, 38)
+                "precipitation": frame(480, 307, 455, 138),
+                "weatherStatus": frame(480, 457, 455, 30)
             ]
         case .signal:
             return [
@@ -78,21 +83,30 @@ enum LayoutDefaults {
 final class LayoutStore: ObservableObject {
     static let shared = LayoutStore()
     @Published private(set) var layouts: [String: [String: ModuleFrame]] = [:]
+    @Published private var interactionPreview: InteractionPreview?
     @Published var fontScale: Double {
         didSet { UserDefaults.standard.set(fontScale, forKey: "DockTelemetry.fontScale") }
     }
     @Published var secondaryFontScale: Double {
         didSet { UserDefaults.standard.set(secondaryFontScale, forKey: "DockTelemetry.secondaryFontScale") }
     }
+    @Published var auxiliaryFontScale: Double {
+        didSet { UserDefaults.standard.set(auxiliaryFontScale, forKey: "DockTelemetry.auxiliaryFontScale") }
+    }
 
     private init() {
         fontScale = UserDefaults.standard.object(forKey: "DockTelemetry.fontScale") as? Double ?? 1.45
         secondaryFontScale = UserDefaults.standard.object(forKey: "DockTelemetry.secondaryFontScale") as? Double ?? 1
+        auxiliaryFontScale = UserDefaults.standard.object(forKey: "DockTelemetry.auxiliaryFontScale") as? Double ?? 1
         for scene in ConsoleScene.allCases { layouts[sceneKey(scene)] = load(scene) }
     }
 
     func frame(_ scene: ConsoleScene, _ module: String) -> ModuleFrame {
-        layouts[sceneKey(scene)]?[module] ?? LayoutDefaults.frames(for: scene)[module] ?? ModuleFrame(x: 40, y: 80, width: 200, height: 100)
+        if interactionPreview?.scene == scene, interactionPreview?.module == module,
+           let previewFrame = interactionPreview?.frame {
+            return previewFrame
+        }
+        return layouts[sceneKey(scene)]?[module] ?? LayoutDefaults.frames(for: scene)[module] ?? ModuleFrame(x: 40, y: 80, width: 200, height: 100)
     }
 
     func update(_ scene: ConsoleScene, module: String, frame: ModuleFrame) {
@@ -100,6 +114,28 @@ final class LayoutStore: ObservableObject {
         sceneLayout[module] = constrained(frame)
         layouts[sceneKey(scene)] = sceneLayout
         save(scene, sceneLayout)
+    }
+
+    /// Preview drag and resize changes in memory, then save once at mouse-up.
+    func previewInteraction(_ scene: ConsoleScene, module: String, frame: ModuleFrame) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            interactionPreview = InteractionPreview(scene: scene, module: module, frame: constrained(frame))
+        }
+    }
+
+    func commitInteraction() {
+        guard let preview = interactionPreview else { return }
+        var sceneLayout = layouts[sceneKey(preview.scene)] ?? LayoutDefaults.frames(for: preview.scene)
+        sceneLayout[preview.module] = preview.frame
+        layouts[sceneKey(preview.scene)] = sceneLayout
+        interactionPreview = nil
+        save(preview.scene, sceneLayout)
+    }
+
+    func cancelInteraction() {
+        interactionPreview = nil
     }
 
     func setVisible(_ visible: Bool, scene: ConsoleScene, module: String) {
@@ -124,7 +160,11 @@ final class LayoutStore: ObservableObject {
     }
 
     private func sceneKey(_ scene: ConsoleScene) -> String { String(scene.rawValue) }
-    private func storageKey(_ scene: ConsoleScene) -> String { "DockTelemetry.layout.v3.\(scene.rawValue)" }
+    private func storageKey(_ scene: ConsoleScene) -> String {
+        scene == .system
+            ? "DockTelemetry.layout.v5.\(scene.rawValue)"
+            : "DockTelemetry.layout.v3.\(scene.rawValue)"
+    }
 
     private func load(_ scene: ConsoleScene) -> [String: ModuleFrame] {
         guard let data = UserDefaults.standard.data(forKey: storageKey(scene)),
@@ -138,11 +178,18 @@ final class LayoutStore: ObservableObject {
         guard let data = try? JSONEncoder().encode(layout) else { return }
         UserDefaults.standard.set(data, forKey: storageKey(scene))
     }
+
+    private struct InteractionPreview {
+        let scene: ConsoleScene
+        let module: String
+        let frame: ModuleFrame
+    }
 }
 
 enum FontRuntime {
     nonisolated(unsafe) static var scale = 1.0
     nonisolated(unsafe) static var secondaryScale = 1.0
+    nonisolated(unsafe) static var auxiliaryScale = 1.0
 }
 
 func consoleFont(_ size: Double, weight: Font.Weight = .regular) -> Font {
@@ -151,6 +198,10 @@ func consoleFont(_ size: Double, weight: Font.Weight = .regular) -> Font {
 
 func consoleSecondaryFont(_ size: Double, weight: Font.Weight = .regular) -> Font {
     .system(size: size * FontRuntime.secondaryScale, weight: weight, design: .monospaced)
+}
+
+func consoleAuxiliaryFont(_ size: Double, weight: Font.Weight = .regular) -> Font {
+    .system(size: size * FontRuntime.auxiliaryScale, weight: weight, design: .monospaced)
 }
 
 struct LayoutModuleContainer<Content: View>: View {
@@ -172,12 +223,11 @@ struct LayoutModuleContainer<Content: View>: View {
 
 struct LayoutEditorView: View {
     @ObservedObject private var layouts = LayoutStore.shared
-    @AppStorage("DockTelemetry.globeWidthCorrection") private var globeWidthCorrection = 1.10
-    @AppStorage("DockTelemetry.globeHeightCorrection") private var globeHeightCorrection = 1.00
+    @StateObject private var marketPreview = MarketModel(preview: true)
     @AppStorage("DockTelemetry.radarWidthCorrection") private var radarWidthCorrection = 1.10
     @AppStorage("DockTelemetry.radarHeightCorrection") private var radarHeightCorrection = 0.9254
     @State private var scene: ConsoleScene = .system
-    @State private var selection = "meters"
+    @State private var selection = "marketFocus"
     @State private var interactionModule: String?
     @State private var interactionStart: ModuleFrame?
     @State private var interactionKind: InteractionKind?
@@ -188,13 +238,18 @@ struct LayoutEditorView: View {
     var body: some View {
         FontRuntime.scale = layouts.fontScale
         FontRuntime.secondaryScale = layouts.secondaryFontScale
+        FontRuntime.auxiliaryScale = layouts.auxiliaryFontScale
         return VStack(spacing: 12) {
             HStack {
                 Picker("View", selection: $scene) {
                     ForEach(ConsoleScene.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 .frame(width: 320)
-                .onChange(of: scene) { selection = LayoutDefaults.modules(for: scene).first?.id ?? "" }
+                .onChange(of: scene) {
+                    layouts.cancelInteraction()
+                    clearInteraction()
+                    selection = LayoutDefaults.modules(for: scene).first?.id ?? ""
+                }
                 Spacer(minLength: 20)
                 LabeledContent("Font size") {
                     Slider(value: $layouts.fontScale, in: 0.75...1.45).frame(width: 125)
@@ -215,25 +270,18 @@ struct LayoutEditorView: View {
                 Spacer()
             }
 
+            HStack {
+                LabeledContent("Other text") {
+                    Slider(value: $layouts.auxiliaryFontScale, in: 0.65...1.45).frame(width: 125)
+                }
+                Text("\(Int(layouts.auxiliaryFontScale * 100))%")
+                    .monospacedDigit().frame(width: 42, alignment: .trailing)
+                Text("Controls chrome, status, and remaining inherited text.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Spacer()
+            }
+
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 12) {
-                    Text("Sphere width").frame(width: 92, alignment: .leading)
-                    Text("NARROW").font(.caption2).foregroundStyle(.secondary)
-                    Slider(value: $globeWidthCorrection, in: 0.70...1.35).frame(width: 260)
-                    Text("WIDE").font(.caption2).foregroundStyle(.secondary)
-                    Text("\(Int(globeWidthCorrection * 100))%")
-                        .monospacedDigit().frame(width: 42, alignment: .trailing)
-                    Spacer()
-                }
-                HStack(spacing: 12) {
-                    Text("Sphere height").frame(width: 92, alignment: .leading)
-                    Text("SHORT").font(.caption2).foregroundStyle(.secondary)
-                    Slider(value: $globeHeightCorrection, in: 0.70...1.35).frame(width: 260)
-                    Text("TALL").font(.caption2).foregroundStyle(.secondary)
-                    Text("\(Int(globeHeightCorrection * 100))%")
-                        .monospacedDigit().frame(width: 42, alignment: .trailing)
-                    Spacer()
-                }
                 HStack(spacing: 12) {
                     Text("Radar width").frame(width: 92, alignment: .leading)
                     Text("NARROW").font(.caption2).foregroundStyle(.secondary)
@@ -250,7 +298,7 @@ struct LayoutEditorView: View {
                     Text("TALL").font(.caption2).foregroundStyle(.secondary)
                     Text("\(Int(radarHeightCorrection * 100))%")
                         .monospacedDigit().frame(width: 42, alignment: .trailing)
-                    Text("Adjust both while looking at the physical dock screen until the globe is circular.")
+                    Text("Adjust both while looking at the physical dock screen until the radar is circular.")
                         .font(.caption).foregroundStyle(.secondary)
                     Spacer()
                 }
@@ -301,6 +349,7 @@ struct LayoutEditorView: View {
         .frame(width: 960 * scale, height: 540 * scale)
         .contentShape(Rectangle())
         .gesture(editorGesture)
+        .transaction { transaction in transaction.animation = nil }
         .clipped()
         .overlay(Rectangle().stroke(Color.green.opacity(0.7), lineWidth: 1))
     }
@@ -315,18 +364,23 @@ struct LayoutEditorView: View {
         let cpu = (0..<96).map { 0.24 + sin(Double($0) * 0.22) * 0.11 }
         let memory = (0..<96).map { 0.57 + sin(Double($0) * 0.06) * 0.025 }
         let network = (0..<96).map { max(0.02, sin(Double($0) * 0.31) * 0.18 + 0.12) }
+        let previewHour = Date()
+        let hourly = previewHourlyForecast(from: previewHour)
+        let daily = previewDailyForecast(from: previewHour)
         let weather = WeatherSnapshot(
             location: "LOCAL PREVIEW", condition: "PARTLY CLOUDY",
             temperature: 24, apparentTemperature: 25, humidity: 0.58,
             windSpeed: 12, precipitation: 0,
             temperatureForecast: [0.72, 0.68, 0.61, 0.55, 0.50, 0.45, 0.42, 0.40, 0.36, 0.34, 0.31, 0.29],
             precipitationForecast: [0.08, 0.05, 0.04, 0.03, 0.04, 0.08, 0.12, 0.09, 0.06, 0.04, 0.03, 0.02],
+            hourlyForecast: hourly,
+            dailyForecast: daily,
             status: "STATIC LAYOUT PREVIEW"
         )
         Group {
             switch scene {
             case .system:
-                SystemScene(snapshot: telemetry, history: cpu, time: 10)
+                SystemScene(market: marketPreview, time: 10)
             case .radar:
                 RadarScene(weather: weather, time: 10)
             case .signal:
@@ -353,7 +407,18 @@ struct LayoutEditorView: View {
                     style: StrokeStyle(lineWidth: selected ? 2 : 1, dash: value.visible ? [] : [5, 4])
                 )
             if selected {
-                Rectangle().fill(Color.yellow).frame(width: 14, height: 14)
+                ZStack {
+                    Rectangle().fill(Color.black.opacity(0.8))
+                    Rectangle().stroke(Color.yellow, lineWidth: 2)
+                    Path { path in
+                        path.move(to: CGPoint(x: 4, y: 12))
+                        path.addLine(to: CGPoint(x: 12, y: 4))
+                        path.move(to: CGPoint(x: 8, y: 12))
+                        path.addLine(to: CGPoint(x: 12, y: 8))
+                    }
+                    .stroke(Color.yellow, lineWidth: 1.5)
+                }
+                .frame(width: 16, height: 16)
             }
         }
         .frame(width: value.width * scale, height: value.height * scale)
@@ -375,9 +440,14 @@ struct LayoutEditorView: View {
                         width: 24 / scale,
                         height: 24 / scale
                     )
-                    let resizing = handle.contains(point)
+                    let resizing = !selection.isEmpty && handle.contains(point)
                     let module = resizing ? selection : hitTest(point)
-                    guard !module.isEmpty else { return }
+                    guard !module.isEmpty else {
+                        selection = ""
+                        layouts.cancelInteraction()
+                        clearInteraction()
+                        return
+                    }
                     selection = module
                     interactionModule = module
                     interactionStart = layouts.frame(scene, module)
@@ -394,12 +464,11 @@ struct LayoutEditorView: View {
                     updated.x += dx
                     updated.y += dy
                 }
-                layouts.update(scene, module: module, frame: updated)
+                layouts.previewInteraction(scene, module: module, frame: updated)
             }
             .onEnded { _ in
-                interactionModule = nil
-                interactionKind = nil
-                interactionStart = nil
+                layouts.commitInteraction()
+                clearInteraction()
             }
     }
 
@@ -411,6 +480,49 @@ struct LayoutEditorView: View {
                 let right = layouts.frame(scene, rhs.id)
                 return left.width * left.height < right.width * right.height
             }?.id ?? ""
+    }
+
+    private func clearInteraction() {
+        interactionModule = nil
+        interactionKind = nil
+        interactionStart = nil
+    }
+
+    private func previewHourlyForecast(from start: Date) -> [HourlyWeatherPoint] {
+        var result: [HourlyWeatherPoint] = []
+        for index in 0..<12 {
+            let indexValue = Double(index)
+            let time = start.addingTimeInterval(indexValue * 3600)
+            let temperature = 24 - indexValue * 0.35 + sin(indexValue * 0.7)
+            let rainChance = max(0.02, sin(indexValue * 0.42) * 0.18 + 0.12)
+            let condition = index < 5 ? "PARTLY CLOUDY" : "CLEAR SKY"
+            result.append(HourlyWeatherPoint(
+                time: time,
+                temperature: temperature,
+                precipitationChance: rainChance,
+                condition: condition
+            ))
+        }
+        return result
+    }
+
+    private func previewDailyForecast(from start: Date) -> [DailyWeatherPoint] {
+        var result: [DailyWeatherPoint] = []
+        for index in 0..<7 {
+            let date = Calendar.current.date(byAdding: .day, value: index, to: start) ?? start
+            let low = 18 + Double(index % 2)
+            let high = 25 + Double(index % 3)
+            let rainChance = Double((index * 17) % 55) / 100
+            let condition = index.isMultiple(of: 3) ? "RAIN SHOWERS" : "PARTLY CLOUDY"
+            result.append(DailyWeatherPoint(
+                date: date,
+                low: low,
+                high: high,
+                precipitationChance: rainChance,
+                condition: condition
+            ))
+        }
+        return result
     }
 
     @ViewBuilder
@@ -426,7 +538,7 @@ struct LayoutEditorView: View {
                 Stepper("W \(Int(value.width))", value: frameBinding(module.id, \.width), in: 70...930, step: 1)
                 Stepper("H \(Int(value.height))", value: frameBinding(module.id, \.height), in: 38...470, step: 1)
             }
-            Text("Changes save immediately.")
+            Text("Drag changes save at mouse-up. Steppers save immediately.")
                 .font(.caption2).foregroundStyle(.secondary)
         }
         .padding(8)

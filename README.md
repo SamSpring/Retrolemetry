@@ -1,6 +1,6 @@
 # Retrolemetry
 
-Retrolemetry turns a small secondary Mac display into a native, animated system console. It is designed around a 960×540 dock screen, stays out of the Dock, and uses SwiftUI and AppKit—no Electron or web view.
+Retrolemetry turns a secondary Mac display into a native, animated system console. Its composition is designed at 960×540, then scales proportionally to Mac, iPad/Sidecar, phone-landscape, and custom display sizes without distorting the layout. It stays out of the Dock and uses SwiftUI and AppKit—no Electron or web view.
 
 > Screenshots are coming with the first release. Image sources belong in [`assets/screenshots`](assets/screenshots/).
 
@@ -10,13 +10,13 @@ Retrolemetry turns a small secondary Mac display into a native, animated system 
 
 - CPU, memory, disk, network, load average, and uptime telemetry
 - Four views: System Telemetry, Sector Scan, Signal Analysis, and Live System Metrics
-- Animated segmented meters, history traces, radar, vector terrain, Lissajous scope, and wireframe globe
-- Green-phosphor and synthwave themes, plus adjustable bloom, scan bands, noise, vignette, and VHS tracking
-- Local weather conditions and 12-hour temperature and precipitation graphs
+- A dedicated live stock-market screen with a rotating globe, separate world clocks, two five-symbol ticker boards, a focus chart, and a compact USD→ILS reference-rate history
+- Green-phosphor and synthwave themes, plus adjustable bloom, scan bands, noise, vignette, and dual VHS tracking lines
+- Local conditions, a 12-hour temperature/precipitation forecast, and a configurable 3–7-day outlook
 
 ### Dedicated-display behavior
 
-- Exact 960×540 borderless window
+- Borderless output with Match Display, common Mac/iPad/phone-landscape presets, and custom dimensions
 - Automatically chooses the smallest external display, or remembers a display selected in Settings
 - Returns to that display after reconnection
 - Waits hidden when an explicitly selected display is disconnected instead of falling back to the main Mac display
@@ -24,10 +24,13 @@ Retrolemetry turns a small secondary Mac display into a native, animated system 
 
 ### Customization and control
 
-- Optional automatic scene cycling and horizontal mouse-wheel navigation
+- Optional automatic scene cycling, configurable scene order and interval, horizontal mouse-wheel navigation, and selectable Pan, Diagonal Wipe, or Sync Roll transitions
 - Keys `1`–`4` select a scene; `0` or `A` resumes automatic cycling
-- Visual layout editor with drag, resize, visibility, typography, and per-view reset controls
-- Globe and radar aspect-ratio calibration for unusual physical screens
+- Visual layout editor with drag, resize, visibility, three typography roles, and per-view reset controls
+- Radar aspect-ratio calibration for unusual physical screens
+- Editable Finnhub watch symbols with a Keychain-protected personal API key
+- Three configurable market-panel world clocks with automatic daylight-saving changes
+- Optional animated synthwave perspective grid in Signal Analysis, with travel speed driven by live CPU load
 - Settings export, menu-bar controls, Launch at Login, and a `SIGUSR1` automation toggle
 
 GPU utilization and temperatures are intentionally omitted because macOS does not provide stable public APIs suitable for this lightweight implementation.
@@ -35,7 +38,7 @@ GPU utilization and temperatures are intentionally omitted because macOS does no
 ## Requirements
 
 - macOS 14 Sonoma or later
-- A 960×540 secondary display for the intended layout (the app can run on other displays, but the console remains 960×540)
+- Any macOS-visible secondary display. Match Display is recommended; iPad works through Sidecar, while an iPhone requires third-party software that exposes it to macOS as an external display.
 - Apple silicon or Intel, depending on the architecture included in the downloaded release
 
 ## Install from GitHub Releases
@@ -68,7 +71,8 @@ Use Xcode or Command Line Tools whose Swift compiler and macOS SDK versions matc
 - `1`–`4`: select a scene
 - `0` or `A`: resume automatic cycling
 - Horizontal mouse wheel: move between scenes
-- Menu-bar waveform: show/hide, move display, open Settings, or quit
+- Menu-bar waveform: show/hide, toggle synthwave colors, move display, open Settings, or quit
+- `⌘⇧D` toggles the console and `⌘⇧S` toggles synthwave while Retrolemetry is active
 - `⌘⇧D`: show or hide while the menu is active
 
 For BetterTouchTool, add a **Run Shell Script / Task** action:
@@ -78,6 +82,12 @@ killall -USR1 Retrolemetry
 ```
 
 The signal hides the console to reveal the content underneath, or restores it to the preferred display. The process remains running, so the response is immediate.
+
+To bind synthwave switching in BetterTouchTool, use a second **Run Shell Script / Task** action:
+
+```sh
+killall -USR2 Retrolemetry
+```
 
 ## Display setup and Launch at Login
 
@@ -89,7 +99,9 @@ Retrolemetry starts as a menu-bar accessory app and centers its fixed-size windo
 
 Retrolemetry has no accounts, analytics, advertising, or bundled tracking SDKs. System telemetry is read and displayed locally.
 
-Weather is optional. When location access is allowed, Core Location provides an approximate coordinate and Retrolemetry sends that coordinate to the [Open-Meteo](https://open-meteo.com/) forecast API over HTTPS. The app does not include an API key and does not store a location history. Denying location access leaves the weather panel unavailable without affecting system telemetry.
+Weather is optional. When location access is allowed, Core Location provides an approximate coordinate and Retrolemetry sends that coordinate to the [Open-Meteo](https://open-meteo.com/) forecast API over HTTPS. The app does not include a weather API key and does not store a location history. Denying location access leaves the weather panel unavailable without affecting system telemetry.
+
+Live market data is also optional. Retrolemetry sends only the configured ticker symbols directly to Finnhub and stores the user's personal Finnhub API key in macOS Keychain. The key is never written to preferences, exported settings, source control, or release archives. The USD→ILS panel requests public daily reference-rate history from [Frankfurter](https://frankfurter.dev/) and is explicitly labeled as daily data, not a live trading quote. Quotes are informational and are not trading advice.
 
 ## Support
 

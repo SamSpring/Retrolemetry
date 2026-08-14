@@ -12,11 +12,25 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Layout, typography, theme, and physical-display calibration controls
 - Optional Core Location and Open-Meteo weather panel
 - Menu-bar controls, Launch at Login, settings export, and `SIGUSR1` automation
+- A menu-bar synthwave toggle and independent thickness controls for two moving VHS tracking lines
+- Dynamic Show/Hide menu text, keyboard equivalents, and separate BetterTouchTool signals for visibility and theme
+- Pan, diagonal wipe, and CRT sync-roll scene transitions
+- A third typography control for chrome, status, and remaining interface text
+- A live Finnhub market panel with editable symbols and a Keychain-protected personal API key
+- A dedicated market-watch layout with no system meters competing for space
+- Three configurable world clocks on the market panel, defaulting to Florida, Los Angeles, and London
+- A restored rotating market globe, separate clock module, two five-symbol ticker boards, and a compact USD→ILS daily reference graph
+- Configurable slideshow ordering, 15/30/60/180-second presets, and a custom interval field
+- Optional CPU-driven synthwave perspective grid for Signal Analysis
+- Match-display, common Mac/iPad/phone-landscape, and custom output sizing with proportional 960×540 rendering
+- A combined 12-hour weather forecast and configurable 3–7-day daily outlook
 - Reproducible `.app` bundle packaging, Developer ID signing hooks, and notarization workflow
 
 ### Changed
 
 - Public package, product, target, executable, and process name standardized as Retrolemetry
 - Existing `DockTelemetry.*` preference keys retained to preserve settings for early builds
+- Scene changes now keep both views on screen for a continuous edge-to-edge pan
+- The System Telemetry globe area now presents live quotes, daily changes, ranges, and accumulating price traces
 
 [Unreleased]: https://github.com/SamSpring/Retrolemetry/commits/main
