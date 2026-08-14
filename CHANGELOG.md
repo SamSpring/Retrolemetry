@@ -39,5 +39,6 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Settings navigation and the layout editor inspector were reorganized for clearer editing at practical window sizes
 - All three typography controls now support scaling up to 200%
 - Settings now use one AppKit-owned window, preventing duplicate windows after backup export and eliminating unused top space
+- Signal grids now span beyond the viewport, show the selected live input in the header, and use stronger data-driven terrain motion with a synthwave-pink horizon
 
 [Unreleased]: https://github.com/SamSpring/Retrolemetry/commits/main

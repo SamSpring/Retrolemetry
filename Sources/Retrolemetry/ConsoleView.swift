@@ -40,6 +40,14 @@ enum SignalGridMetric: String, CaseIterable, Identifiable {
         case .disk: "DISK USED"
         }
     }
+    var shortTitle: String {
+        switch self {
+        case .cpu: "CPU"
+        case .gpuProxy: "LOAD"
+        case .network: "NET"
+        case .disk: "DSK"
+        }
+    }
 }
 
 enum SignalGridPattern: String, CaseIterable, Identifiable {
@@ -1247,6 +1255,16 @@ struct SignalScene: View {
         }
     }
 
+    private var gridMetricLabel: String {
+        let metric = SignalGridMetric(rawValue: gridMetricRaw) ?? .cpu
+        switch metric {
+        case .network:
+            return "GRID \(metric.shortTitle) \(byteRate(snapshot.networkIn + snapshot.networkOut))"
+        default:
+            return String(format: "GRID %@ %03.0f%%", metric.shortTitle, gridMetricValue * 100)
+        }
+    }
+
     var body: some View {
         ZStack {
             FrameChrome(title: "SIGNAL ANALYSIS", section: "SIG", time: time)
@@ -1261,7 +1279,8 @@ struct SignalScene: View {
                         travelPhase: gridTravelPhase,
                         wavePhase: gridWavePhase,
                         metricValue: smoothedGridMetric,
-                        pattern: SignalGridPattern(rawValue: gridPatternRaw) ?? .recede
+                        pattern: SignalGridPattern(rawValue: gridPatternRaw) ?? .recede,
+                        responseGain: (SignalGridResponse(rawValue: gridResponseRaw) ?? .medium).multiplier
                     )
                 } else {
                     drawGrid(context: &context, size: rect.size, columns: 16, rows: 8, origin: rect.origin, strength: 0.72)
@@ -1286,7 +1305,7 @@ struct SignalScene: View {
             }
             LayoutModuleContainer(scene: .signal, module: "signalHeader") {
                 HStack {
-                    Text(String(format: "CH A  CPU %03.0f%%", snapshot.cpu * 100))
+                    Text(gridMetricLabel)
                     Spacer()
                     Text(String(format: "CH B  MEM %03.0f%%", snapshot.memory * 100))
                     Spacer()
@@ -1319,8 +1338,8 @@ struct SignalScene: View {
         let response = SignalGridResponse(rawValue: gridResponseRaw) ?? .medium
         let blend = 1 - exp(-delta * response.smoothingRate)
         smoothedGridMetric += (gridMetricValue - smoothedGridMetric) * blend
-        gridTravelPhase += delta * (0.025 + smoothedGridMetric * 0.055) * response.multiplier
-        gridWavePhase += delta * (0.18 + smoothedGridMetric * 0.62) * response.multiplier
+        gridTravelPhase += delta * (0.020 + smoothedGridMetric * 0.12) * response.multiplier
+        gridWavePhase += delta * (0.25 + smoothedGridMetric * 1.30) * response.multiplier
     }
 }
 
@@ -1330,16 +1349,18 @@ private func drawSynthwaveGrid(
     travelPhase: Double,
     wavePhase: Double,
     metricValue: Double,
-    pattern: SignalGridPattern
+    pattern: SignalGridPattern,
+    responseGain: Double
 ) {
     let horizon = rect.minY + rect.height * 0.32
     let bottom = rect.maxY
     let centerX = rect.midX
     let normalizedMetric = min(1, max(0, metricValue))
-    let pulse = sin(wavePhase)
+    let metricEnergy = pow(normalizedMetric, 0.72) * (0.72 + responseGain * 0.52)
+    let pulse = sin(wavePhase * 1.6)
 
     for index in -10...10 {
-        let bottomX = centerX + CGFloat(index) * rect.width / 10
+        let bottomX = centerX + CGFloat(index) * rect.width / 7.5
         var path = Path()
         for step in 0...64 {
             let depth = CGFloat(step) / 64
@@ -1351,15 +1372,15 @@ private func drawSynthwaveGrid(
             switch pattern {
             case .recede:
                 phase = Double(depth) * 6.2 + xPhase + wavePhase * 0.16
-                amplitude = 6.5
+                amplitude = 8.0 + metricEnergy * 24.0
             case .terrainPulse:
-                phase = Double(depth) * 7.4 + xPhase
-                amplitude = 7.0 + (pulse + 1) * 5.0 * normalizedMetric
+                phase = Double(depth) * 7.4 + xPhase - wavePhase * 1.10
+                amplitude = 10.0 + metricEnergy * (18.0 + (pulse + 1) * 18.0)
             case .signalSweep:
                 phase = Double(depth) * 10.0 + xPhase - wavePhase * 1.35
-                amplitude = 5.5 + normalizedMetric * 7.5
+                amplitude = 9.0 + metricEnergy * 34.0
             }
-            let terrain = sin(phase) * amplitude * Double(perspective)
+            let terrain = sin(phase) * amplitude * Double(0.16 + perspective * 0.84)
             let y = horizon + (bottom - horizon) * perspective + CGFloat(terrain)
             step == 0 ? path.move(to: CGPoint(x: x, y: y)) : path.addLine(to: CGPoint(x: x, y: y))
         }
@@ -1370,7 +1391,7 @@ private func drawSynthwaveGrid(
         let patternTravel: Double
         switch pattern {
         case .recede: patternTravel = travelPhase
-        case .terrainPulse: patternTravel = 0
+        case .terrainPulse: patternTravel = sin(wavePhase * 0.7) * 0.025
         case .signalSweep: patternTravel = travelPhase * 0.45
         }
         let rawDepth = Double(row) / 16 - patternTravel
@@ -1382,30 +1403,31 @@ private func drawSynthwaveGrid(
         for step in 0...80 {
             let xProgress = CGFloat(step) / 80
             let normalizedX = xProgress * 2 - 1
-            let x = centerX + normalizedX * rect.width * 0.56 * perspective
+            let horizontalSpread = 0.16 + perspective * 1.18
+            let x = centerX + normalizedX * rect.width * horizontalSpread
             let phase: Double
             let amplitude: Double
             switch pattern {
             case .recede:
                 phase = Double(normalizedX) * .pi * 2.2 + Double(depth) * 6.2 + wavePhase * 0.16
-                amplitude = 6.5
+                amplitude = 8.0 + metricEnergy * 24.0
             case .terrainPulse:
-                phase = Double(normalizedX) * .pi * 2.6 + Double(depth) * 7.4
-                amplitude = 7.0 + (pulse + 1) * 5.0 * normalizedMetric
+                phase = Double(normalizedX) * .pi * 2.6 + Double(depth) * 7.4 - wavePhase * 1.10
+                amplitude = 10.0 + metricEnergy * (18.0 + (pulse + 1) * 18.0)
             case .signalSweep:
                 phase = Double(normalizedX) * .pi * 3.0 + Double(depth) * 10.0 - wavePhase * 1.35
-                amplitude = 5.5 + normalizedMetric * 7.5
+                amplitude = 9.0 + metricEnergy * 34.0
             }
-            let y = yBase + CGFloat(sin(phase) * amplitude) * perspective
+            let y = yBase + CGFloat(sin(phase) * amplitude) * (0.18 + perspective * 0.82)
             step == 0 ? path.move(to: CGPoint(x: x, y: y)) : path.addLine(to: CGPoint(x: x, y: y))
         }
-        context.stroke(path, with: .color(phosphor.opacity(0.30 + Double(perspective) * 0.58)), lineWidth: 0.7 + perspective * 0.9)
+        context.stroke(path, with: .color(phosphor.opacity(0.38 + Double(perspective) * 0.56)), lineWidth: 0.8 + perspective * 1.0)
     }
 
     var horizonPath = Path()
     horizonPath.move(to: CGPoint(x: rect.minX, y: horizon))
     horizonPath.addLine(to: CGPoint(x: rect.maxX, y: horizon))
-    context.stroke(horizonPath, with: .color(phosphor.opacity(0.78)), lineWidth: 1.2)
+    context.stroke(horizonPath, with: .color(dimPhosphor.opacity(0.98)), lineWidth: 1.45)
 }
 
 struct CompactMeter: View {
