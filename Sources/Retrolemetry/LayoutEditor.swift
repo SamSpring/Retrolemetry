@@ -229,6 +229,10 @@ struct LayoutEditorView: View {
     @AppStorage("DockTelemetry.globeWidthCorrection") private var globeWidthCorrection = 1.10
     @AppStorage("DockTelemetry.globeHeightCorrection") private var globeHeightCorrection = 0.9254
     @AppStorage("DockTelemetry.signalSynthwaveGrid") private var signalSynthwaveGrid = false
+    @AppStorage("DockTelemetry.signalGridAnimationEnabled") private var signalGridAnimationEnabled = true
+    @AppStorage("DockTelemetry.signalGridMetric") private var signalGridMetricRaw = SignalGridMetric.cpu.rawValue
+    @AppStorage("DockTelemetry.signalGridPattern") private var signalGridPatternRaw = SignalGridPattern.recede.rawValue
+    @AppStorage("DockTelemetry.signalGridResponse") private var signalGridResponseRaw = SignalGridResponse.medium.rawValue
     @AppStorage("DockTelemetry.layoutSnapEnabled") private var snapEnabled = false
     @AppStorage("DockTelemetry.layoutSnapStep") private var snapStep = 10.0
     @State private var scene: ConsoleScene = .system
@@ -285,8 +289,32 @@ struct LayoutEditorView: View {
 
                 if scene == .signal {
                     GroupBox("Signal Analysis") {
-                        Toggle("Synthwave perspective grid", isOn: $signalSynthwaveGrid)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 9) {
+                            Toggle("Synthwave perspective grid", isOn: $signalSynthwaveGrid)
+                            Group {
+                                Toggle("Animate grid", isOn: $signalGridAnimationEnabled)
+                                Picker("Pattern", selection: $signalGridPatternRaw) {
+                                    ForEach(SignalGridPattern.allCases) { pattern in
+                                        Text(pattern.title).tag(pattern.rawValue)
+                                    }
+                                }
+                                Picker("Respond to", selection: $signalGridMetricRaw) {
+                                    ForEach(SignalGridMetric.allCases) { metric in
+                                        Text(metric.title).tag(metric.rawValue)
+                                    }
+                                }
+                                Picker("Frequency response", selection: $signalGridResponseRaw) {
+                                    ForEach(SignalGridResponse.allCases) { response in
+                                        Text(response.title).tag(response.rawValue)
+                                    }
+                                }
+                                Text("GPU uses normalized system load because macOS has no stable public GPU-utilization API.")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .disabled(!signalSynthwaveGrid)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
 

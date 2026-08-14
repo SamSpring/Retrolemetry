@@ -26,6 +26,7 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - A combined 12-hour weather forecast and configurable 3–7-day daily outlook
 - Reproducible `.app` bundle packaging, Developer ID signing hooks, and notarization workflow
 - Optional 5/10/20-pixel snapping for moving and resizing modules in the layout editor
+- Signal-grid animation controls for motion, telemetry source, pattern, and response speed
 
 ### Changed
 
@@ -37,5 +38,6 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Wipe transitions are fully opaque, and Sync Roll now collapses and restores the CRT image at the center line
 - Settings navigation and the layout editor inspector were reorganized for clearer editing at practical window sizes
 - All three typography controls now support scaling up to 200%
+- Settings now use one AppKit-owned window, preventing duplicate windows after backup export and eliminating unused top space
 
 [Unreleased]: https://github.com/SamSpring/Retrolemetry/commits/main

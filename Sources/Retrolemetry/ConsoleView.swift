@@ -28,6 +28,54 @@ enum SceneTransitionStyle: String, CaseIterable, Identifiable {
     }
 }
 
+enum SignalGridMetric: String, CaseIterable, Identifiable {
+    case cpu, gpuProxy, network, disk
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .cpu: "CPU"
+        case .gpuProxy: "GPU / SYSTEM LOAD"
+        case .network: "NETWORK"
+        case .disk: "DISK USED"
+        }
+    }
+}
+
+enum SignalGridPattern: String, CaseIterable, Identifiable {
+    case recede, terrainPulse, signalSweep
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .recede: "Recede"
+        case .terrainPulse: "Terrain Pulse"
+        case .signalSweep: "Signal Sweep"
+        }
+    }
+}
+
+enum SignalGridResponse: String, CaseIterable, Identifiable {
+    case low, medium, high
+
+    var id: String { rawValue }
+    var title: String { rawValue.uppercased() }
+    var multiplier: Double {
+        switch self {
+        case .low: 0.55
+        case .medium: 1.0
+        case .high: 1.65
+        }
+    }
+    var smoothingRate: Double {
+        switch self {
+        case .low: 0.8
+        case .medium: 2.0
+        case .high: 5.0
+        }
+    }
+}
+
 enum ConsoleScene: Int, CaseIterable {
     case system, radar, signal, fullMetrics
 
@@ -1177,6 +1225,28 @@ struct SignalScene: View {
     let networkHistory: [Double]
     let time: Double
     @AppStorage("DockTelemetry.signalSynthwaveGrid") private var synthwaveGrid = false
+    @AppStorage("DockTelemetry.signalGridAnimationEnabled") private var gridAnimationEnabled = true
+    @AppStorage("DockTelemetry.signalGridMetric") private var gridMetricRaw = SignalGridMetric.cpu.rawValue
+    @AppStorage("DockTelemetry.signalGridPattern") private var gridPatternRaw = SignalGridPattern.recede.rawValue
+    @AppStorage("DockTelemetry.signalGridResponse") private var gridResponseRaw = SignalGridResponse.medium.rawValue
+    @State private var gridTravelPhase = 0.0
+    @State private var gridWavePhase = 0.0
+    @State private var smoothedGridMetric = 0.0
+    @State private var lastGridTime: Double?
+
+    private var gridMetricValue: Double {
+        switch SignalGridMetric(rawValue: gridMetricRaw) ?? .cpu {
+        case .cpu:
+            snapshot.cpu
+        case .gpuProxy:
+            min(1, snapshot.load.0 / Double(max(1, ProcessInfo.processInfo.activeProcessorCount)))
+        case .network:
+            min(1, (snapshot.networkIn + snapshot.networkOut) / 12_000_000)
+        case .disk:
+            snapshot.disk
+        }
+    }
+
     var body: some View {
         ZStack {
             FrameChrome(title: "SIGNAL ANALYSIS", section: "SIG", time: time)
@@ -1188,8 +1258,10 @@ struct SignalScene: View {
                     drawSynthwaveGrid(
                         context: &context,
                         rect: rect,
-                        time: time,
-                        cpuLoad: snapshot.cpu
+                        travelPhase: gridTravelPhase,
+                        wavePhase: gridWavePhase,
+                        metricValue: smoothedGridMetric,
+                        pattern: SignalGridPattern(rawValue: gridPatternRaw) ?? .recede
                     )
                 } else {
                     drawGrid(context: &context, size: rect.size, columns: 16, rows: 8, origin: rect.origin, strength: 0.72)
@@ -1227,20 +1299,44 @@ struct SignalScene: View {
             LayoutModuleContainer(scene: .signal, module: "networkTrace") { MiniTrace(label: "NETWORK", values: networkHistory) }
             LayoutModuleContainer(scene: .signal, module: "ioReadout") { Readout(label: "I/O RX / TX", value: "\(byteRate(snapshot.networkIn)) / \(byteRate(snapshot.networkOut))") }
         }
+        .onAppear {
+            smoothedGridMetric = gridMetricValue
+            lastGridTime = time
+        }
+        .onChange(of: time) {
+            advanceGridMotion(to: time)
+        }
+        .onChange(of: gridMetricRaw) {
+            smoothedGridMetric = gridMetricValue
+        }
+    }
+
+    private func advanceGridMotion(to newTime: Double) {
+        defer { lastGridTime = newTime }
+        guard gridAnimationEnabled, let previousTime = lastGridTime else { return }
+        let delta = min(0.1, max(0, newTime - previousTime))
+        guard delta > 0 else { return }
+        let response = SignalGridResponse(rawValue: gridResponseRaw) ?? .medium
+        let blend = 1 - exp(-delta * response.smoothingRate)
+        smoothedGridMetric += (gridMetricValue - smoothedGridMetric) * blend
+        gridTravelPhase += delta * (0.025 + smoothedGridMetric * 0.055) * response.multiplier
+        gridWavePhase += delta * (0.18 + smoothedGridMetric * 0.62) * response.multiplier
     }
 }
 
 private func drawSynthwaveGrid(
     context: inout GraphicsContext,
     rect: CGRect,
-    time: Double,
-    cpuLoad: Double
+    travelPhase: Double,
+    wavePhase: Double,
+    metricValue: Double,
+    pattern: SignalGridPattern
 ) {
     let horizon = rect.minY + rect.height * 0.32
     let bottom = rect.maxY
     let centerX = rect.midX
-    let normalizedLoad = min(1, max(0, cpuLoad))
-    let travel = time * (0.055 + normalizedLoad * 0.095)
+    let normalizedMetric = min(1, max(0, metricValue))
+    let pulse = sin(wavePhase)
 
     for index in -10...10 {
         let bottomX = centerX + CGFloat(index) * rect.width / 10
@@ -1250,7 +1346,20 @@ private func drawSynthwaveGrid(
             let perspective = pow(depth, 1.58)
             let x = centerX + (bottomX - centerX) * perspective
             let xPhase = Double(index) * 0.43
-            let terrain = sin(Double(depth) * 6.2 + xPhase + time * 0.16) * 7.5 * Double(perspective)
+            let phase: Double
+            let amplitude: Double
+            switch pattern {
+            case .recede:
+                phase = Double(depth) * 6.2 + xPhase + wavePhase * 0.16
+                amplitude = 6.5
+            case .terrainPulse:
+                phase = Double(depth) * 7.4 + xPhase
+                amplitude = 7.0 + (pulse + 1) * 5.0 * normalizedMetric
+            case .signalSweep:
+                phase = Double(depth) * 10.0 + xPhase - wavePhase * 1.35
+                amplitude = 5.5 + normalizedMetric * 7.5
+            }
+            let terrain = sin(phase) * amplitude * Double(perspective)
             let y = horizon + (bottom - horizon) * perspective + CGFloat(terrain)
             step == 0 ? path.move(to: CGPoint(x: x, y: y)) : path.addLine(to: CGPoint(x: x, y: y))
         }
@@ -1258,7 +1367,13 @@ private func drawSynthwaveGrid(
     }
 
     for row in 0..<16 {
-        let rawDepth = Double(row) / 16 - travel
+        let patternTravel: Double
+        switch pattern {
+        case .recede: patternTravel = travelPhase
+        case .terrainPulse: patternTravel = 0
+        case .signalSweep: patternTravel = travelPhase * 0.45
+        }
+        let rawDepth = Double(row) / 16 - patternTravel
         let wrappedDepth = rawDepth - floor(rawDepth)
         let depth = CGFloat(wrappedDepth)
         let perspective = pow(depth, 1.82)
@@ -1268,8 +1383,20 @@ private func drawSynthwaveGrid(
             let xProgress = CGFloat(step) / 80
             let normalizedX = xProgress * 2 - 1
             let x = centerX + normalizedX * rect.width * 0.56 * perspective
-            let terrain = sin(Double(normalizedX) * .pi * 2.2 + Double(depth) * 6.2 + time * 0.16)
-            let y = yBase + CGFloat(terrain) * 7.5 * perspective
+            let phase: Double
+            let amplitude: Double
+            switch pattern {
+            case .recede:
+                phase = Double(normalizedX) * .pi * 2.2 + Double(depth) * 6.2 + wavePhase * 0.16
+                amplitude = 6.5
+            case .terrainPulse:
+                phase = Double(normalizedX) * .pi * 2.6 + Double(depth) * 7.4
+                amplitude = 7.0 + (pulse + 1) * 5.0 * normalizedMetric
+            case .signalSweep:
+                phase = Double(normalizedX) * .pi * 3.0 + Double(depth) * 10.0 - wavePhase * 1.35
+                amplitude = 5.5 + normalizedMetric * 7.5
+            }
+            let y = yBase + CGFloat(sin(phase) * amplitude) * perspective
             step == 0 ? path.move(to: CGPoint(x: x, y: y)) : path.addLine(to: CGPoint(x: x, y: y))
         }
         context.stroke(path, with: .color(phosphor.opacity(0.30 + Double(perspective) * 0.58)), lineWidth: 0.7 + perspective * 0.9)

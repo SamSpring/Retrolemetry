@@ -4,13 +4,16 @@ import CoreGraphics
 import ServiceManagement
 
 @main
-struct RetrolemetryApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+enum RetrolemetryApp {
+    @MainActor private static var retainedDelegate: AppDelegate?
 
-    var body: some Scene {
-        Settings {
-            SettingsView()
-        }
+    @MainActor
+    static func main() {
+        let application = NSApplication.shared
+        let delegate = AppDelegate()
+        retainedDelegate = delegate
+        application.delegate = delegate
+        application.run()
     }
 }
 
@@ -375,7 +378,7 @@ struct SettingsView: View {
               LayoutEditorView()
             }
         }
-        .frame(width: 1040, height: 720)
+        .frame(minWidth: 1040, maxWidth: .infinity, minHeight: 720, maxHeight: .infinity, alignment: .top)
         .onAppear {
             selectedDisplayID = UserDefaults.standard.integer(forKey: DisplayPreference.idKey)
             launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -460,8 +463,18 @@ struct SettingsView: View {
         let panel = NSSavePanel()
         panel.title = "Export Retrolemetry Settings"
         panel.nameFieldStringValue = "Retrolemetry-Settings-Backup.plist"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let completion: (NSApplication.ModalResponse) -> Void = { response in
+            guard response == .OK, let url = panel.url else { return }
+            saveSettingsBackup(to: url)
+        }
+        if let parent = NSApp.keyWindow {
+            panel.beginSheetModal(for: parent, completionHandler: completion)
+        } else {
+            completion(panel.runModal())
+        }
+    }
 
+    private func saveSettingsBackup(to url: URL) {
         let bundleID = Bundle.main.bundleIdentifier ?? "io.github.SamSpring.Retrolemetry"
         var values = UserDefaults.standard.persistentDomain(forName: bundleID) ?? [:]
         values = values.filter { $0.key.hasPrefix("DockTelemetry.") }
@@ -506,6 +519,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             "DockTelemetry.radarWidthCorrection": 1.10,
             "DockTelemetry.radarHeightCorrection": 0.9254256185,
             "DockTelemetry.signalSynthwaveGrid": false,
+            "DockTelemetry.signalGridAnimationEnabled": true,
+            "DockTelemetry.signalGridMetric": SignalGridMetric.cpu.rawValue,
+            "DockTelemetry.signalGridPattern": SignalGridPattern.recede.rawValue,
+            "DockTelemetry.signalGridResponse": SignalGridResponse.medium.rawValue,
             "DockTelemetry.layoutSnapEnabled": false,
             "DockTelemetry.layoutSnapStep": 10.0,
             "DockTelemetry.outputResolutionPreset": OutputResolutionPreset.matchDisplay.id,
@@ -527,7 +544,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         controller = DisplayWindowController()
         controller?.show()
         installSignalToggle()
-        closeLegacySettingsWindow()
     }
 
     private func migrateLegacyPreferences() {
@@ -543,14 +559,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationShouldRestoreState(_ app: NSApplication) -> Bool { false }
-
-    private func closeLegacySettingsWindow() {
-        DispatchQueue.main.async {
-            NSApp.windows
-                .filter { $0.identifier?.rawValue == "com_apple_SwiftUI_Settings_window" }
-                .forEach { $0.close() }
-        }
-    }
 
     private func installStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -827,6 +835,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         window.title = "Retrolemetry Settings"
         window.identifier = NSUserInterfaceItemIdentifier("Retrolemetry.Settings")
         window.contentView = NSHostingView(rootView: SettingsView())
+        window.contentMinSize = NSSize(width: 1040, height: 720)
         window.isReleasedWhenClosed = false
         window.delegate = self
     }
