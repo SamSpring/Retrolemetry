@@ -16,7 +16,7 @@ Retrolemetry turns a secondary Mac display into a native, animated system consol
 - Four views: System Telemetry, Sector Scan, Signal Analysis, and Live System Metrics
 - A dedicated live stock-market screen with a rotating globe, separate world clocks, two five-symbol ticker boards, a click-to-cycle Today/Week/Month/Year focus chart, and a compact USD→ILS reference-rate history
 - Green-phosphor and synthwave themes, plus adjustable bloom, scan bands, noise, vignette, and dual VHS tracking lines
-- Local conditions, a 12-hour temperature/precipitation forecast, and a configurable 3–7-day outlook
+- Local conditions, a 12-hour temperature/precipitation forecast, a configurable 3–7-day outlook, and click-to-cycle weather radar targets
 
 ### Dedicated-display behavior
 
@@ -35,7 +35,7 @@ Retrolemetry turns a secondary Mac display into a native, animated system consol
 - Editable Finnhub watch symbols with a Keychain-protected personal API key
 - Three configurable market-panel world clocks with automatic daylight-saving changes
 - Optional animated synthwave perspective grid in Signal Analysis, with selectable patterns and CPU, system-load, network, or disk response
-- Settings export, menu-bar controls, Launch at Login, and a `SIGUSR1` automation toggle
+- Settings export, menu-bar controls, Launch at Login, a `SIGUSR1` automation toggle, and one-gesture horizontal scene navigation that ignores momentum reversals
 
 GPU utilization and temperatures are intentionally omitted because macOS does not provide stable public APIs suitable for this lightweight implementation.
 

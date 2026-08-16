@@ -5,6 +5,8 @@ All notable changes to Retrolemetry will be documented here. This project follow
 ## [Unreleased]
 
 - Added click-to-cycle Today, Week, Month, and Year ranges to the Market Watch focus chart
+- Stabilized horizontal scene scrolling so each direct gesture moves once and momentum cannot reverse it
+- Added click-to-cycle target modes directly on the live weather radar
 
 ## [1.0.0] - 2026-08-14
 

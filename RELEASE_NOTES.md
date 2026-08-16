@@ -14,11 +14,12 @@ Retrolemetry is a native macOS system console built for compact 960×540 seconda
 - A live Finnhub market panel with editable watch symbols and secure Keychain credential storage
 - A dedicated market-watch scene with a rotating globe, separate clocks, two five-symbol ticker boards, a click-to-cycle Today/Week/Month/Year focus chart, and USD→ILS daily reference history
 - Configurable Florida, Los Angeles, and London world clocks with automatic daylight-saving handling
-- A richer weather view with upcoming hourly conditions, a configurable 3–7-day outlook, and weather-driven radar targets
+- A richer weather view with upcoming hourly conditions, a configurable 3–7-day outlook, and weather-driven radar targets that cycle when the radar is clicked
 - Configurable slideshow ordering and intervals, plus a responsive synthwave perspective grid with three animation patterns and selectable telemetry input
 - Proportional output sizing for compact displays, Macs, iPad/Sidecar, phone-landscape adapters, and custom dimensions
 - Physical-display calibration for globe and radar proportions
 - Optional Launch at Login and BetterTouchTool-compatible show/hide automation
+- Stable one-gesture horizontal scene navigation that ignores trailing momentum reversals
 
 ## Install
 

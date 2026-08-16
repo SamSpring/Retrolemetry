@@ -135,6 +135,7 @@ struct ConsoleView: View {
     @AppStorage("DockTelemetry.phosphorBackgroundTint") private var phosphorBackgroundTint = 0.12
     @AppStorage("DockTelemetry.visualStyle") private var visualStyleRaw = ConsoleStyle.phosphor.rawValue
     @AppStorage("DockTelemetry.sceneTransitionStyle") private var transitionStyleRaw = SceneTransitionStyle.pan.rawValue
+    @AppStorage("DockTelemetry.radarTargetMode") private var radarTargetModeRaw = RadarTargetMode.precipitation.rawValue
     @ObservedObject private var layouts = LayoutStore.shared
     @State private var activeScene: ConsoleScene = .system
     @State private var previousScene: ConsoleScene?
@@ -175,10 +176,19 @@ struct ConsoleView: View {
                 HorizontalScrollCapture { direction in
                     moveScene(direction)
                 } onClick: { point in
-                    guard activeScene == .system else { return }
-                    let focus = layouts.frame(.system, "marketFocus")
-                    guard focus.visible, focus.rect.contains(point) else { return }
-                    marketTimeframe = marketTimeframe.next
+                    switch activeScene {
+                    case .system:
+                        let focus = layouts.frame(.system, "marketFocus")
+                        guard focus.visible, focus.rect.contains(point) else { return }
+                        marketTimeframe = marketTimeframe.next
+                    case .radar:
+                        let radar = layouts.frame(.radar, "radar")
+                        guard radar.visible, radar.rect.contains(point) else { return }
+                        let current = RadarTargetMode(rawValue: radarTargetModeRaw) ?? .precipitation
+                        radarTargetModeRaw = current.next.rawValue
+                    case .signal, .fullMetrics:
+                        return
+                    }
                 }
                 .frame(width: 960, height: 540)
             }
@@ -462,7 +472,10 @@ final class HorizontalScrollView: NSView {
     var onScroll: ((Int) -> Void)?
     var onClick: ((CGPoint) -> Void)?
     private var accumulated: CGFloat = 0
-    private var lastSwitch = Date.distantPast
+    private var gestureTriggered = false
+    private var lastDirectEvent = Date.distantPast
+    private let preciseThreshold: CGFloat = 26
+    private let gestureIdleTimeout: TimeInterval = 0.18
 
     override var acceptsFirstResponder: Bool { false }
 
@@ -473,21 +486,52 @@ final class HorizontalScrollView: NSView {
     }
 
     override func scrollWheel(with event: NSEvent) {
+        let now = Date()
+
+        // Trackpad and Magic Mouse momentum often reverses slightly while settling. Treat
+        // momentum as part of the completed gesture instead of allowing it to change scenes.
+        guard event.momentumPhase.isEmpty else { return }
+
+        if event.phase.contains(.began) || event.phase.contains(.mayBegin) ||
+            (event.phase.isEmpty && now.timeIntervalSince(lastDirectEvent) > gestureIdleTimeout) {
+            resetScrollGesture()
+        }
+        if event.phase.contains(.cancelled) {
+            resetScrollGesture()
+            return
+        }
+        lastDirectEvent = now
+
         let horizontal = event.scrollingDeltaX
-        guard abs(horizontal) > 0.01 else {
+        let vertical = event.scrollingDeltaY
+        guard abs(horizontal) > 0.01, abs(horizontal) >= abs(vertical) * 0.72 else {
+            if event.phase.contains(.ended) { resetScrollGesture() }
             super.scrollWheel(with: event)
             return
         }
 
+        guard !gestureTriggered else {
+            if event.phase.contains(.ended) { resetScrollGesture() }
+            return
+        }
+
         accumulated += horizontal
-        let threshold: CGFloat = event.hasPreciseScrollingDeltas ? 34 : 1
-        guard abs(accumulated) >= threshold,
-              Date().timeIntervalSince(lastSwitch) > 0.45 else { return }
+        let threshold = event.hasPreciseScrollingDeltas ? preciseThreshold : 1
+        guard abs(accumulated) >= threshold else {
+            if event.phase.contains(.ended) { resetScrollGesture() }
+            return
+        }
 
         let direction = accumulated < 0 ? 1 : -1
-        accumulated = 0
-        lastSwitch = Date()
+        gestureTriggered = true
         onScroll?(direction)
+
+        if event.phase.contains(.ended) { resetScrollGesture() }
+    }
+
+    private func resetScrollGesture() {
+        accumulated = 0
+        gestureTriggered = false
     }
 }
 
@@ -1061,6 +1105,11 @@ enum RadarTargetMode: String, CaseIterable, Identifiable {
     case precipitation, temperature, wind, decorative
 
     var id: String { rawValue }
+    var next: RadarTargetMode {
+        let values = Self.allCases
+        let index = values.firstIndex(of: self) ?? 0
+        return values[(index + 1) % values.count]
+    }
     var title: String {
         switch self {
         case .precipitation: "PRECIPITATION // 12H"
@@ -1233,7 +1282,7 @@ struct RadarScene: View {
                 HStack {
                     Text(weather.status)
                     Spacer()
-                    Text("\(radarTargetMode.shortTitle) \(radarTargets(for: weather, mode: radarTargetMode).count) // \(radarTargetPulse ? "PULSE" : "STEADY")")
+                    Text("\(radarTargetMode.shortTitle) \(radarTargets(for: weather, mode: radarTargetMode).count) // \(radarTargetPulse ? "PULSE" : "STEADY") // CLICK RADAR")
                 }
                 .font(consoleAuxiliaryFont(10, weight: .bold))
             }
