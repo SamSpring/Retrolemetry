@@ -666,21 +666,30 @@ struct LargeDataGraph: View {
     let values: [Double]
 
     var body: some View {
-        LineGraph(values: values)
-            .overlay(alignment: .top) {
-                HStack(spacing: 8) {
-                    Text(label)
-                        .font(consoleSecondaryFont(13, weight: .bold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.55)
-                    Spacer(minLength: 4)
-                    Text(value)
-                        .font(consoleFont(18, weight: .bold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.60)
-                }
-                .padding(9)
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Text(label)
+                    .font(consoleSecondaryFont(13, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.55)
+                Spacer(minLength: 4)
+                Text(value)
+                    .font(consoleFont(18, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.60)
             }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 6)
+            .fixedSize(horizontal: false, vertical: true)
+
+            Rectangle()
+                .fill(dimPhosphor.opacity(0.72))
+                .frame(height: 1)
+
+            LineGraph(values: values, showsBorder: false)
+        }
+        .overlay(Rectangle().stroke(dimPhosphor, lineWidth: 1))
+        .clipped()
     }
 }
 
@@ -755,6 +764,8 @@ struct PulseIndicator: View {
 
 struct LineGraph: View {
     let values: [Double]
+    var showsBorder = true
+
     var body: some View {
         Canvas { context, size in
             drawGrid(context: &context, size: size, columns: 12, rows: 4)
@@ -767,7 +778,11 @@ struct LineGraph: View {
             }
             context.stroke(path, with: .color(phosphor), lineWidth: 2.2)
         }
-        .overlay(Rectangle().stroke(dimPhosphor, lineWidth: 1))
+        .overlay {
+            if showsBorder {
+                Rectangle().stroke(dimPhosphor, lineWidth: 1)
+            }
+        }
     }
 }
 
@@ -1373,10 +1388,12 @@ struct DailyForecastPanel: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            HStack {
+            HStack(spacing: 6) {
                 Text("DAILY OUTLOOK // \(days.count) DAYS")
                 Spacer()
-                Text("LOW  HIGH  RAIN")
+                Text("LOW").frame(width: 52, alignment: .trailing)
+                Text("HIGH").frame(width: 52, alignment: .trailing)
+                Text("RAIN").frame(width: 68, alignment: .trailing)
             }
             .font(consoleSecondaryFont(9, weight: .bold))
             .foregroundStyle(dimPhosphor)
@@ -1392,11 +1409,22 @@ struct DailyForecastPanel: View {
                         Text(index == 0 ? "TODAY" : dayLabel(day.date))
                             .frame(width: 45, alignment: .leading)
                         Text(day.condition)
+                            .font(consoleAuxiliaryFont(8.5, weight: .bold))
                             .lineLimit(1)
                             .minimumScaleFactor(0.68)
                         Spacer(minLength: 3)
-                        Text(String(format: "%3.0f°", day.low)).frame(width: 30, alignment: .trailing)
-                        Text(String(format: "%3.0f°", day.high)).frame(width: 30, alignment: .trailing)
+                        Text(String(format: "%.0f°", day.low))
+                            .font(consoleFont(13, weight: .bold))
+                            .monospacedDigit()
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                            .frame(width: 52, alignment: .trailing)
+                        Text(String(format: "%.0f°", day.high))
+                            .font(consoleFont(13, weight: .bold))
+                            .monospacedDigit()
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                            .frame(width: 52, alignment: .trailing)
                         HStack(spacing: 2) {
                             ForEach(0..<5, id: \.self) { segment in
                                 Rectangle()
