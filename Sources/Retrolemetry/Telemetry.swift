@@ -26,7 +26,8 @@ final class TelemetryModel: ObservableObject {
     init() {
         sample()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.sample() }
+            guard let owner = self else { return }
+            Task { @MainActor in owner.sample() }
         }
         timer?.tolerance = 0.12
     }

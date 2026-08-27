@@ -42,6 +42,7 @@ DerivedData/
 *.xcarchive/
 outputs/
 work/
+dist/
 
 # Editors
 .vscode/
