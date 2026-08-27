@@ -83,6 +83,7 @@ struct SettingsView: View {
     @AppStorage("DockTelemetry.globeWidthCorrection") private var globeWidthCorrection = 1.10
     @AppStorage("DockTelemetry.globeHeightCorrection") private var globeHeightCorrection = 0.9254
     @State private var selectedDisplayID = 0
+    @State private var displaySelectionLoaded = false
     @State private var displayRefresh = UUID()
     @State private var launchAtLogin = false
     @State private var launchError: String?
@@ -136,6 +137,7 @@ struct SettingsView: View {
                     }
                 }
                 .onChange(of: selectedDisplayID) {
+                    guard displaySelectionLoaded else { return }
                     saveDisplaySelection(selectedDisplayID)
                 }
                 Toggle("Cover the menu bar on the dock display", isOn: $coverMenuBar)
@@ -380,7 +382,13 @@ struct SettingsView: View {
         }
         .frame(minWidth: 1040, maxWidth: .infinity, minHeight: 720, maxHeight: .infinity, alignment: .top)
         .onAppear {
-            selectedDisplayID = UserDefaults.standard.integer(forKey: DisplayPreference.idKey)
+            displaySelectionLoaded = false
+            if let restored = DisplayPreference.savedScreen() {
+                selectedDisplayID = Int(restored.displayID)
+            } else {
+                selectedDisplayID = 0
+            }
+            DispatchQueue.main.async { displaySelectionLoaded = true }
             launchAtLogin = SMAppService.mainApp.status == .enabled
             marketKeyConfigured = MarketKeychain.apiKey() != nil
             cycleDurationDraft = String(format: "%.0f", cycleDuration)
@@ -787,14 +795,9 @@ final class DisplayWindowController {
     }
 
     private func preferredScreen() -> NSScreen? {
-        let stored = UInt32(UserDefaults.standard.integer(forKey: DisplayPreference.idKey))
-        if stored != 0, let match = NSScreen.screens.first(where: { $0.displayID == stored }) {
-            return match
-        }
+        let stored = UserDefaults.standard.integer(forKey: DisplayPreference.idKey)
         if stored != 0 {
-            guard let restored = DisplayPreference.restoredScreen() else { return nil }
-            DisplayPreference.save(restored)
-            return restored
+            return DisplayPreference.savedScreen()
         }
 
         let external = NSScreen.screens.filter { CGDisplayIsBuiltin($0.displayID) == 0 }
@@ -867,16 +870,54 @@ enum DisplayPreference {
         [idKey, nameKey, widthKey, heightKey].forEach { defaults.removeObject(forKey: $0) }
     }
 
+    static func savedScreen() -> NSScreen? {
+        let defaults = UserDefaults.standard
+        let storedID = CGDirectDisplayID(defaults.integer(forKey: idKey))
+        guard storedID != 0 else { return nil }
+
+        if let idMatch = NSScreen.screens.first(where: { $0.displayID == storedID }),
+           matchesSavedIdentity(idMatch) {
+            return idMatch
+        }
+        guard let restored = restoredScreen() else { return nil }
+        save(restored)
+        return restored
+    }
+
     static func restoredScreen() -> NSScreen? {
         let defaults = UserDefaults.standard
         let name = defaults.string(forKey: nameKey)
         let width = defaults.integer(forKey: widthKey)
         let height = defaults.integer(forKey: heightKey)
-        return NSScreen.screens.first {
-            let sameName = name != nil && $0.localizedName == name
-            let sameSize = Int($0.frame.width.rounded()) == width && Int($0.frame.height.rounded()) == height
-            return sameName && sameSize
+
+        let exactMatches = NSScreen.screens.filter {
+            $0.localizedName == name && hasSize($0, width: width, height: height)
         }
+        if exactMatches.count == 1 { return exactMatches[0] }
+
+        if let name, !name.isEmpty {
+            let nameMatches = NSScreen.screens.filter { $0.localizedName == name }
+            if nameMatches.count == 1 { return nameMatches[0] }
+        }
+
+        guard width > 0, height > 0 else { return nil }
+        let sizeMatches = NSScreen.screens.filter { hasSize($0, width: width, height: height) }
+        return sizeMatches.count == 1 ? sizeMatches[0] : nil
+    }
+
+    private static func matchesSavedIdentity(_ screen: NSScreen) -> Bool {
+        let defaults = UserDefaults.standard
+        if let name = defaults.string(forKey: nameKey), !name.isEmpty {
+            return screen.localizedName == name
+        }
+        let width = defaults.integer(forKey: widthKey)
+        let height = defaults.integer(forKey: heightKey)
+        guard width > 0, height > 0 else { return true }
+        return hasSize(screen, width: width, height: height)
+    }
+
+    private static func hasSize(_ screen: NSScreen, width: Int, height: Int) -> Bool {
+        Int(screen.frame.width.rounded()) == width && Int(screen.frame.height.rounded()) == height
     }
 }
 

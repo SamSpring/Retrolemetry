@@ -10,6 +10,7 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Kept full-system graph traces below their title and value headers at every typography scale
 - Enlarged daily weather low and high temperatures and reserved enough width to prevent truncation
 - Restored the green phosphor background tint control without making scene transitions transparent
+- Restored the preferred external display by saved identity when macOS reassigns temporary display IDs
 
 ## [1.0.0] - 2026-08-14
 
