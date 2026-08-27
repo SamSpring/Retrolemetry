@@ -294,18 +294,18 @@ struct ConsoleView: View {
         switch style {
         case .pan:
             sceneView(scene, time: time)
-                .background(Color.black)
+                .background(sceneBackground)
                 .offset(x: incoming
                     ? CGFloat(transitionDirection) * 960 * (1 - transitionProgress)
                     : -CGFloat(transitionDirection) * 960 * transitionProgress)
         case .wipe:
             if incoming {
                 sceneView(scene, time: time)
-                    .background(Color.black)
+                    .background(sceneBackground)
                     .mask(DiagonalWipeMask(progress: transitionProgress, direction: transitionDirection))
             } else {
                 sceneView(scene, time: time)
-                    .background(Color.black)
+                    .background(sceneBackground)
             }
         case .syncRoll:
             let halfProgress = incoming
@@ -315,11 +315,18 @@ struct ConsoleView: View {
                 ? max(0.018, halfProgress)
                 : max(0.018, 1 - halfProgress)
             sceneView(scene, time: time)
-                .background(Color.black)
+                .background(sceneBackground)
                 .scaleEffect(x: 1 + (1 - verticalScale) * 0.018, y: verticalScale, anchor: .center)
                 .offset(x: CGFloat(sin(Double(transitionProgress) * .pi * 15)) * (1 - verticalScale) * 11)
                 .opacity(incoming ? (transitionProgress >= 0.48 ? 1 : 0) : (transitionProgress < 0.52 ? 1 : 0))
         }
+    }
+
+    private var sceneBackground: some View {
+        ConsoleBackground(
+            style: ConsoleStyle(rawValue: visualStyleRaw) ?? .phosphor,
+            phosphorTintStrength: phosphorBackgroundTint
+        )
     }
 
     @ViewBuilder
