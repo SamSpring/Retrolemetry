@@ -4,6 +4,7 @@ Retrolemetry is a native macOS system console built for compact 960×540 seconda
 
 ## Highlights
 
+- Secure in-app update checks through the menu-bar menu, with verified downloads, installation and relaunch; optional automatic checks in Settings
 - Four animated views for telemetry, radar/weather, signal analysis, and oversized live metrics
 - Automatic external-display selection with a remembered preferred display
 - Green-phosphor and synthwave themes with configurable CRT-style effects
@@ -45,4 +46,4 @@ If live market data is configured, ticker symbols are sent directly to Finnhub a
 
 ## Release integrity
 
-The v1.0.0 release candidate is universal for Apple silicon and Intel, signed with a Developer ID Application certificate, accepted by Apple's notarization service, and contains a stapled notarization ticket. When the release is published, `SHA256SUMS.txt` will contain the checksum for the exact release ZIP.
+Publication remains held. The updater-enabled universal candidate must pass Developer ID signing, Apple notarization, stapling, Gatekeeper validation and the final clean-account acceptance check. Publisher must use the newly validated updater-enabled ZIP, not the earlier pre-updater candidate. When published, `SHA256SUMS.txt` will identify the exact ZIP also used by the signed update feed.

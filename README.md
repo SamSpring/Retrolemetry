@@ -119,6 +119,14 @@ Retrolemetry starts as a menu-bar accessory app and centers its fixed-size windo
 
 Retrolemetry has no accounts, analytics, advertising, or bundled tracking SDKs. System telemetry is read and displayed locally.
 
+### Updates
+
+Choose **Check for Updates…** from Retrolemetry's menu-bar menu (or Settings → Updates). [Sparkle 2](https://sparkle-project.org/) downloads the update, verifies it, installs it and relaunches the app. Updates preserve the existing preference domain, saved layouts, Keychain credentials and login-item identity. Settings also lets you opt in or out of automatic update checks.
+
+The dedicated HTTPS update feed is `https://samspring.github.io/Retrolemetry/appcast.xml`. Both the feed and update archives must carry Retrolemetry's own Ed25519 signature; archives are verified before extraction. No system profile, weather location, stock symbols or API key is attached to update requests. GitHub receives ordinary web requests (including the network address and Sparkle's app/version user agent). Source-run executables do not start the updater.
+
+Before the first public release, the feed is prepared but not deployed. A source-built app's public update check can therefore report a connection error until Publisher deploys the validated feed. This is not a claim that v1.0.0 is available.
+
 Personal-location weather is optional. When location access is allowed, Core Location provides an approximate coordinate and Retrolemetry sends that coordinate to the [Open-Meteo](https://open-meteo.com/) forecast API over HTTPS. The app does not include a weather API key and does not store a location history. Denying location access leaves local weather and automatic region selection unavailable; system telemetry and a manually selected regional map still work.
 
 The weather scan supports Israel, North America and Europe. **Automatic (location)** is the default: a local coverage test chooses a supported map from the existing approximate weather location, without reverse-geocoding or requesting new permissions. Outside those coverage areas, or without a location, choose a manual region in Settings → Weather forecast or Layout Editor → Weather → Map region. Manual selection changes only the map and its representative forecast points, not the personal-location hourly/daily forecast. Israel retains Tel Aviv-Yafo's city outline; other regions do not display it.

@@ -19,9 +19,23 @@
     <key>CFBundleShortVersionString</key>
     <string>1.0.0</string>
     <key>CFBundleVersion</key>
-    <string>19</string>
+    <string>20</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
+    <key>SUFeedURL</key>
+    <string>https://samspring.github.io/Retrolemetry/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>rPCCnQ2uJbuBh7gnxN4ObX9SJGh+JLGDhiy8Qr9BeF8=</string>
+    <key>SURequireSignedFeed</key>
+    <true/>
+    <key>SUSignedFeedFailureExpirationInterval</key>
+    <real>0</real>
+    <key>SUVerifyUpdateBeforeExtraction</key>
+    <true/>
+    <key>SUSendProfileInfo</key>
+    <false/>
+    <key>SUAutomaticallyUpdate</key>
+    <false/>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>

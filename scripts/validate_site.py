@@ -5,6 +5,7 @@ from html.parser import HTMLParser
 import json
 from pathlib import Path
 import re
+import xml.etree.ElementTree as ET
 from urllib.parse import urlsplit
 
 root = Path(__file__).resolve().parent.parent
@@ -25,6 +26,14 @@ if args.release:
     assert re.fullmatch(r"[a-f0-9]{64}", config["sha256"])
     expected = f"{repo}/releases/download/v{config['version']}/Retrolemetry-{config['version']}.zip"
     assert config["downloadUrl"] == expected
+    ns = "{http://www.andymatuschak.org/xml-namespaces/sparkle}"
+    matching = [i for i in ET.parse(root / "site/appcast.xml").findall("./channel/item")
+                if i.findtext(ns + "shortVersionString") == config["version"]]
+    assert len(matching) == 1, "Require the reviewed release entry before deploying"
+    enclosure = matching[0].find("enclosure")
+    assert enclosure is not None and enclosure.attrib["url"] == expected
+    assert enclosure.attrib.get(ns + "edSignature"), "Missing update archive signature"
+    assert matching[0].findtext(ns + "minimumSystemVersion") in ["14.0", "14.0.0"]
 
 
 class LocalFiles(HTMLParser):

@@ -4,6 +4,8 @@ All notable changes to Retrolemetry will be documented here. This project follow
 
 ## [1.0.0] - 2026-10-14
 
+- Added Sparkle 2.10.0 update checks, verified download/install/relaunch, a dedicated Retrolemetry signing key and signed HTTPS feed, and an automatic-check setting; existing preferences, layouts, credentials and login identity remain unchanged
+- Embedded and signed Sparkle's nested helpers before outer app signing; added private feed preparation, reproducible dependency locking and isolated native updater QA
 - Added the approved split phosphor-green/synthwave app icon, transparent native edges and all standard/Retina icon sizes; the menu-bar waveform stays unchanged
 - Renamed Headers/main text to Main text and made Dark texts control every dim text element across all scenes, including dim titles, clock labels, and ticker columns; saved settings and module frames remain unchanged
 - Added double-click slideshow start/stop without triggering a stock/radar single-click action; manual scrolling remains available while paused

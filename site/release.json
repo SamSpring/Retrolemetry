@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "architecture": "universal",
   "minimumMacOS": "14.0",
-  "sha256": "240e4a21ea2fa4ca03ac9e8ae0f569d4343fdbbfdcd22e450607322315dd698b",
-  "notarized": true,
+  "sha256": "",
+  "notarized": false,
   "publicDownloadVerified": false,
   "supportUrl": "https://ko-fi.com/samspring"
 }

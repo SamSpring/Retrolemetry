@@ -24,7 +24,19 @@ jobs:
           test -x build/Retrolemetry.app/Contents/MacOS/Retrolemetry
           test -s build/Retrolemetry.app/Contents/Resources/default.metallib
           test -s build/Retrolemetry.app/Contents/Resources/AppIcon.icns
+          test -s build/Retrolemetry.app/Contents/Resources/Sparkle-LICENSE.txt
+          test -x build/Retrolemetry.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate
+          test -x build/Retrolemetry.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater
+          test "$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' build/Retrolemetry.app/Contents/Info.plist)" = https://samspring.github.io/Retrolemetry/appcast.xml
+          test "$(/usr/libexec/PlistBuddy -c 'Print :SURequireSignedFeed' build/Retrolemetry.app/Contents/Info.plist)" = true
+          test "$(/usr/libexec/PlistBuddy -c 'Print :SUVerifyUpdateBeforeExtraction' build/Retrolemetry.app/Contents/Info.plist)" = true
+          otool -l build/Retrolemetry.app/Contents/MacOS/Retrolemetry | grep -q '@executable_path/../Frameworks'
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' build/Retrolemetry.app/Contents/Info.plist)" = AppIcon.icns
           ARCHS=$(lipo -archs build/Retrolemetry.app/Contents/MacOS/Retrolemetry)
           echo "$ARCHS" | grep -qw arm64
           echo "$ARCHS" | grep -qw x86_64
+      - name: Verify update feed and release-site safeguards
+        run: |
+          swift scripts/verify_appcast.swift Resources/Info.plist site/appcast.xml
+          python3 scripts/validate_site.py
+          sh -n scripts/package_app.sh scripts/embed_sparkle.sh scripts/notarize_app.sh

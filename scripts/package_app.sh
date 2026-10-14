@@ -3,11 +3,12 @@ set -eu
 
 APP_NAME="Retrolemetry"
 VERSION="${VERSION:-1.0.0}"
-BUILD_NUMBER="${BUILD_NUMBER:-1}"
+BUILD_NUMBER="${BUILD_NUMBER:-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Resources/Info.plist)}"
 CONFIGURATION="${CONFIGURATION:-release}"
 OUTPUT_DIR="${OUTPUT_DIR:-build}"
 DIST_DIR="${DIST_DIR:-dist}"
 INFO_PLIST="Resources/Info.plist"
+SWIFT_SCRATCH_PATH="${SWIFT_SCRATCH_PATH:-.build}"
 
 OUTPUT_APP="$OUTPUT_DIR/$APP_NAME.app"
 STAGING_DIR=$(mktemp -d "${TMPDIR:-/tmp}/retrolemetry-package.XXXXXX")
@@ -18,18 +19,24 @@ CONTENTS="$APP_BUNDLE/Contents"
 if [ -n "${PREBUILT_BINARY:-}" ]; then
     BINARY="$PREBUILT_BINARY"
 elif [ "${UNIVERSAL:-0}" = "1" ]; then
-    swift build -c "$CONFIGURATION" --arch arm64 --arch x86_64
-    BIN_DIR=$(swift build -c "$CONFIGURATION" --arch arm64 --arch x86_64 --show-bin-path)
+    swift build --scratch-path "$SWIFT_SCRATCH_PATH" -c "$CONFIGURATION" --arch arm64 --arch x86_64
+    BIN_DIR=$(swift build --scratch-path "$SWIFT_SCRATCH_PATH" -c "$CONFIGURATION" --arch arm64 --arch x86_64 --show-bin-path)
     BINARY="$BIN_DIR/$APP_NAME"
 else
-    swift build -c "$CONFIGURATION"
-    BIN_DIR=$(swift build -c "$CONFIGURATION" --show-bin-path)
+    swift build --scratch-path "$SWIFT_SCRATCH_PATH" -c "$CONFIGURATION"
+    BIN_DIR=$(swift build --scratch-path "$SWIFT_SCRATCH_PATH" -c "$CONFIGURATION" --show-bin-path)
     BINARY="$BIN_DIR/$APP_NAME"
 fi
 
 mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources" "$OUTPUT_DIR" "$DIST_DIR"
 cp "$BINARY" "$CONTENTS/MacOS/$APP_NAME"
 cp "$INFO_PLIST" "$CONTENTS/Info.plist"
+
+# SwiftPM links Sparkle but does not assemble the .app. Keep helpers, symlinks
+# and signatures intact, and re-sign nested code before signing the outer app.
+SPARKLE_FRAMEWORK="${SPARKLE_FRAMEWORK:-$SWIFT_SCRATCH_PATH/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework}"
+sh scripts/embed_sparkle.sh "$APP_BUNDLE" "$SPARKLE_FRAMEWORK"
+cp "${SPARKLE_LICENSE:-$SWIFT_SCRATCH_PATH/artifacts/sparkle/Sparkle/LICENSE}" "$CONTENTS/Resources/Sparkle-LICENSE.txt"
 
 # Generate all standard/Retina sizes from the approved transparent icon master.
 swift scripts/render_app_icon.swift Resources/AppIcon.png "$STAGING_DIR/AppIcon.iconset"

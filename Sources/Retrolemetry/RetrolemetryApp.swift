@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import CoreGraphics
 import ServiceManagement
+import Sparkle
 
 @main
 enum RetrolemetryApp {
@@ -49,6 +50,7 @@ struct OutputResolutionPreset: Identifiable {
 }
 
 struct SettingsView: View {
+    @ObservedObject private var appUpdater = AppUpdater.shared
     private enum Page: String, CaseIterable, Identifiable {
         case general = "General"
         case layout = "Layout Editor"
@@ -175,6 +177,20 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
+            }
+            Section("Updates") {
+                Toggle("Automatically check for updates", isOn: Binding(
+                    get: { appUpdater.automaticallyChecks },
+                    set: { appUpdater.automaticallyChecks = $0 }
+                ))
+                .disabled(!appUpdater.available)
+                Button("Check for Updates…") {
+                    appUpdater.controller.checkForUpdates(nil)
+                }
+                .disabled(!appUpdater.available || !appUpdater.canCheck)
+                Text("Updates are downloaded securely and verified before installation. Installing an update keeps your preferences and layouts.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section("Automatic scenes") {
                 Toggle("Automatically cycle scenes", isOn: $automaticCycleEnabled)
@@ -506,6 +522,7 @@ struct SettingsView: View {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+    private let appUpdater = AppUpdater.shared
     private var controller: DisplayWindowController?
     private var settingsController: SettingsWindowController?
     private var statusItem: NSStatusItem?
@@ -564,6 +581,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         controller = DisplayWindowController()
         controller?.show()
         installSignalToggle()
+        appUpdater.start()
     }
 
     private func migrateLegacyPreferences() {
@@ -612,6 +630,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let settings = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
+        let update = NSMenuItem(title: "Check for Updates…", action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
+        update.target = appUpdater.controller
+        menu.addItem(update)
         menu.addItem(.separator())
         let quitItem = NSMenuItem(title: "Quit Retrolemetry", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
