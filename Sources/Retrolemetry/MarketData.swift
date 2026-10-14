@@ -200,6 +200,7 @@ struct MarketClockZone: Identifiable, Hashable {
 
 @MainActor
 final class MarketModel: ObservableObject {
+    @Published private(set) var focusedSymbol: String?
     @Published private(set) var quotes: [String: MarketQuote] = [:]
     @Published private(set) var histories: [String: [Double]] = [:]
     @Published private(set) var rangeHistories: [String: [MarketTimeframe: [Double]]] = [:]
@@ -296,6 +297,11 @@ final class MarketModel: ObservableObject {
     func stop() {
         refreshTask?.cancel()
         refreshTask = nil
+    }
+
+    func focus(_ symbol: String) {
+        guard symbols.contains(symbol) else { return }
+        focusedSymbol = focusedSymbol == symbol ? nil : symbol
     }
 
     func restart() {

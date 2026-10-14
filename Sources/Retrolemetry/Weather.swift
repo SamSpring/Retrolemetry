@@ -18,6 +18,7 @@ struct DailyWeatherPoint {
 }
 
 struct WeatherSnapshot {
+    var coordinate: GlobeCoordinate?
     var location = "AWAITING LOCATION"
     var condition = "WEATHER OFFLINE"
     var temperature = 0.0
@@ -31,6 +32,17 @@ struct WeatherSnapshot {
     var dailyForecast: [DailyWeatherPoint] = []
     var updatedAt: Date?
     var status = "LOCATION PERMISSION REQUIRED"
+    var radarWeather: [RadarWeatherPoint] = []
+    var radarUpdatedAt: Date?
+    var radarStatus = "REGIONAL FORECAST PENDING"
+    var radarRegion: RadarRegion?
+    var localForecastIsAvailable: Bool { updatedAt.map { Date().timeIntervalSince($0) < 3600 } ?? false }
+}
+
+@MainActor
+final class WeatherLocation: ObservableObject {
+    static let shared = WeatherLocation()
+    @Published var coordinate: GlobeCoordinate?
 }
 
 @MainActor
@@ -40,20 +52,85 @@ final class WeatherModel: NSObject, ObservableObject, CLLocationManagerDelegate 
     private let locationManager = CLLocationManager()
     private var refreshTimer: Timer?
     private var coordinate: CLLocationCoordinate2D?
+    private var regionalRequestInFlight = false
+    private var regionalTask: Task<Void, Never>?
+    private var regionObserver: AnyCancellable?
+    private let defaults: UserDefaults
 
-    override init() {
+    init(preview: Bool = false, defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         super.init()
+        if preview {
+            let now = Date()
+            snapshot = WeatherSnapshot(coordinate: GlobeCoordinate(latitude: 32, longitude: 35),
+                location: "STATIC WEATHER PREVIEW", condition: "PARTLY CLOUDY", temperature: 24,
+                apparentTemperature: 25, humidity: 0.58, windSpeed: 12,
+                temperatureForecast: (0..<12).map { 0.4 + sin(Double($0)*0.3)*0.2 },
+                precipitationForecast: (0..<12).map { 0.2 + sin(Double($0)*0.3)*0.1 },
+                hourlyForecast: (0..<12).map { HourlyWeatherPoint(time: now.addingTimeInterval(Double($0)*3600), temperature: 24+sin(Double($0)*0.3)*5, precipitationChance: 0.2, condition: "PARTLY CLOUDY") },
+                dailyForecast: (0..<7).map { DailyWeatherPoint(date: now.addingTimeInterval(Double($0)*86400), low: 18+Double($0%2), high: 25+Double($0%3), precipitationChance: 0.2, condition: "PARTLY CLOUDY") }, status: "SYNTHETIC QA DATA")
+            let selection = WeatherRegionSelection(rawValue: defaults.string(forKey: WeatherRegionSelection.preferenceKey) ?? "") ?? .automatic
+            let region = selection.resolve(coordinate: snapshot.coordinate) ?? .israel
+            snapshot.radarRegion = region
+            snapshot.updatedAt = now
+            snapshot.radarWeather = RadarWeatherPoint.preview(at: now, region: region)
+            snapshot.radarUpdatedAt = now
+            snapshot.radarStatus = "SYNTHETIC FORECAST PREVIEW"
+            return
+        }
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
         requestLocation()
+        regionObserver = NotificationCenter.default.publisher(for: WeatherRegionSelection.changed).sink { [weak self] _ in
+            Task { @MainActor in self?.refreshRegionalForecast() }
+        }
+        refreshRegionalForecast()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 15 * 60, repeats: true) { [weak self] _ in
             guard let owner = self else { return }
-            Task { @MainActor in owner.refresh() }
+            Task { @MainActor in owner.refresh(); owner.refreshRegionalForecast() }
         }
         refreshTimer?.tolerance = 60
     }
 
-    deinit { refreshTimer?.invalidate() }
+    deinit { refreshTimer?.invalidate(); regionalTask?.cancel() }
+
+    private func refreshRegionalForecast() {
+        let selection = WeatherRegionSelection(rawValue: defaults.string(forKey: WeatherRegionSelection.preferenceKey) ?? "") ?? .automatic
+        let region = selection.resolve(coordinate: snapshot.coordinate)
+        if region != snapshot.radarRegion {
+            regionalTask?.cancel()
+            regionalTask = nil
+            regionalRequestInFlight = false
+            snapshot.radarRegion = region
+            snapshot.radarWeather = []
+            snapshot.radarUpdatedAt = nil
+        }
+        guard let region else {
+            snapshot.radarStatus = snapshot.coordinate == nil ? "ALLOW LOCATION OR SELECT MAP" : "SELECT A SUPPORTED MAP REGION"
+            return
+        }
+        if let updated = snapshot.radarUpdatedAt, Date().timeIntervalSince(updated) < 15 * 60 { return }
+        guard !regionalRequestInFlight else { return }
+        regionalRequestInFlight = true
+        regionalTask = Task { [weak self] in
+            guard let self else { return }
+            defer { if !Task.isCancelled { self.regionalRequestInFlight = false } }
+            do {
+                var request = URLRequest(url: RegionalWeatherFeed.url(for: region))
+                request.timeoutInterval = 25
+                let (data, response) = try await URLSession.shared.data(for: request)
+                guard !Task.isCancelled, self.snapshot.radarRegion == region else { return }
+                guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
+                self.snapshot.radarWeather = try RegionalWeatherFeed.decode(data, region: region)
+                self.snapshot.radarUpdatedAt = Date()
+                self.snapshot.radarStatus = "OPEN-METEO // FORECAST"
+            } catch {
+                guard !Task.isCancelled, self.snapshot.radarRegion == region else { return }
+                self.snapshot.radarStatus = self.snapshot.radarWeather.isEmpty
+                    ? "REGIONAL FORECAST OFFLINE" : "FORECAST OFFLINE // LAST UPDATE"
+            }
+        }
+    }
 
     private func requestLocation() {
         switch locationManager.authorizationStatus {
@@ -64,7 +141,14 @@ final class WeatherModel: NSObject, ObservableObject, CLLocationManagerDelegate 
             snapshot.status = "REQUESTING LOCATION"
             locationManager.requestWhenInUseAuthorization()
         case .denied, .restricted:
+            coordinate = nil
+            snapshot.coordinate = nil
+            WeatherLocation.shared.coordinate = nil
+            snapshot.updatedAt = nil
+            snapshot.hourlyForecast = []
+            snapshot.dailyForecast = []
             snapshot.status = "ENABLE LOCATION IN SYSTEM SETTINGS"
+            refreshRegionalForecast()
         @unknown default:
             snapshot.status = "LOCATION UNAVAILABLE"
         }
@@ -83,8 +167,11 @@ final class WeatherModel: NSObject, ObservableObject, CLLocationManagerDelegate 
 
     private func applyLocation(latitude: Double, longitude: Double) {
         coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+        snapshot.coordinate = GlobeCoordinate(latitude: latitude, longitude: longitude)
+        WeatherLocation.shared.coordinate = snapshot.coordinate
         snapshot.location = "LOCAL WEATHER"
         refresh()
+        refreshRegionalForecast()
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {

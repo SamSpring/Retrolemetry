@@ -2,8 +2,38 @@
 
 All notable changes to Retrolemetry will be documented here. This project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.0] - 2026-10-14
 
+- Added the approved split phosphor-green/synthwave app icon, transparent native edges and all standard/Retina icon sizes; the menu-bar waveform stays unchanged
+- Renamed Headers/main text to Main text and made Dark texts control every dim text element across all scenes, including dim titles, clock labels, and ticker columns; saved settings and module frames remain unchanged
+- Added double-click slideshow start/stop without triggering a stock/radar single-click action; manual scrolling remains available while paused
+- Split typography into Metrics/Stats, Dark texts, Main text, Frame header, and Frame footer with independent global/per-view controls and backward-compatible saved sizes
+- Added automatic weather-region selection using existing location coverage, plus manual Israel/North America/Europe selection in General and Weather layout settings
+- Added cached, bounded regional vector maps and region-specific six-location forecast batches; region switches cancel outdated requests and cannot show another region's weather points
+- Replaced Settings scene dropdowns with tabs and extended all typography controls to 300%, without changing saved values or module frames
+- Fixed the Signal Analysis network I/O border to occupy its saved module frame instead of creating extra inset horizontal edges
+- Added a bounded GPU-drawn Israel map, with only Tel Aviv-Yafo outlined inside it, and six geographically positioned forecast samples for rain probability, temperature, and wind speed/direction
+- Replaced pseudo-spatial weather contacts with actual regional Open-Meteo forecasts, refreshed in one batch every 15 minutes; missing/stale data stays unavailable and decorative contacts remain labeled as demo
+- Added complete globe meridians, continent outlines, an approximate-weather-location pulse, and offline weekday trading-region lights
+- Kept native vectors throughout scene switches and synchronized their progress with the text, masks, and transition effects
+- Added ticker-row focus selection without changing stock symbols or chart timeframes
+- Standardized typography roles and added global/per-view controls without resetting existing font values or layouts
+- Removed hidden-module editor outlines and matched curved/effected previews and drag coordinates to the live view
+- Expanded only the outer frame's vertical clearance so 200% frame text fits without moving saved modules
+- Moved steady-scene globe, radar, signal/grid, and CRT grain/tracking animation to bounded native Metal layers instead of rebuilding SwiftUI paths each frame
+- Removed duplicate per-frame signal-grid state updates; retained metric smoothing, animation choices, calibration, and typography
+- Removed hidden-console rendering work and limited in-flight GPU frames and effect-buffer resolution
+- Replaced the Signal Analysis memory-at-horizon option with real GPU history, retaining existing horizon selections
+- Added optional GPU utilization, GPU-history, and battery power/voltage modules to Live System Metrics
+- Read GPU counters once per second and battery flow every five seconds through public IOKit functions, with explicit unavailable states and no CPU-load proxy
+- Preserved custom module frames while offering an expanded six-tile/four-graph metrics default
+- Kept radar and globe shape calibration exclusively on their corresponding layout-editor pages without resetting saved corrections
+- Reduced CPU use by limiting animation clocks to moving elements instead of rebuilding complete scenes every frame
+- Reused CRT noise textures and batched stationary scanline/grid drawing while preserving the visual controls
+- Added a 15/30/60 fps performance selector, defaulting to 30 fps, and paused animation while hidden, occluded, or asleep
+- Consolidated system samples into one snapshot update and reduced disk-capacity checks to once every 30 seconds
+- Added a Signal Analysis display selector for the spinning signal or a live GPU-history silhouette along the grid horizon
+- Added optional GPU-rendered CRT tube curvature with a global strength slider and matching curved-screen click coordinates
 - Added click-to-cycle Today, Week, Month, and Year ranges to the Market Watch focus chart
 - Stabilized horizontal scene scrolling so each direct gesture moves once and momentum cannot reverse it
 - Added click-to-cycle target modes directly on the live weather radar
@@ -12,7 +42,7 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Restored the green phosphor background tint control without making scene transitions transparent
 - Restored the preferred external display by saved identity when macOS reassigns temporary display IDs
 
-## [1.0.0] - 2026-08-14
+### Earlier release-preparation changes
 
 ### Added
 
@@ -53,5 +83,4 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Signal grids now span beyond the viewport, show the selected live input in the header, and use stronger data-driven terrain motion with a synthwave-pink horizon
 - The layout editor now uses its lower workspace for typography, modules, and selected-module controls instead of a narrow scrolling sidebar
 
-[Unreleased]: https://github.com/SamSpring/Retrolemetry/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/SamSpring/Retrolemetry/releases/tag/v1.0.0

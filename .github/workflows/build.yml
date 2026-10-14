@@ -13,6 +13,8 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
+      - name: Test telemetry and layout safeguards
+        run: swift test -c release --jobs 2
       - name: Build and package
         run: UNIVERSAL=1 VERSION=0.0.0-ci BUILD_NUMBER=${{ github.run_number }} ./scripts/package_app.sh
       - name: Verify bundle
@@ -20,6 +22,9 @@ jobs:
           plutil -lint build/Retrolemetry.app/Contents/Info.plist
           codesign --verify --deep --strict build/Retrolemetry.app
           test -x build/Retrolemetry.app/Contents/MacOS/Retrolemetry
+          test -s build/Retrolemetry.app/Contents/Resources/default.metallib
+          test -s build/Retrolemetry.app/Contents/Resources/AppIcon.icns
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' build/Retrolemetry.app/Contents/Info.plist)" = AppIcon.icns
           ARCHS=$(lipo -archs build/Retrolemetry.app/Contents/MacOS/Retrolemetry)
           echo "$ARCHS" | grep -qw arm64
           echo "$ARCHS" | grep -qw x86_64

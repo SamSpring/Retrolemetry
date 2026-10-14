@@ -11,6 +11,7 @@ let package = Package(
         .executableTarget(
             name: "Retrolemetry",
             path: "Sources/Retrolemetry"
-        )
+        ),
+        .testTarget(name: "RetrolemetryTests", dependencies: ["Retrolemetry"])
     ]
 )

@@ -61,6 +61,9 @@ struct SettingsView: View {
     @AppStorage("DockTelemetry.sceneOrder") private var sceneOrderRaw = SceneOrder.defaultValue
     @AppStorage("DockTelemetry.coverMenuBar") private var coverMenuBar = true
     @AppStorage("DockTelemetry.crtEnabled") private var crtEnabled = true
+    @AppStorage("DockTelemetry.animationFrameRate") private var animationFrameRate = 30.0
+    @AppStorage("DockTelemetry.crtTubeEnabled") private var crtTubeEnabled = false
+    @AppStorage("DockTelemetry.crtTubeStrength") private var crtTubeStrength = 0.35
     @AppStorage("DockTelemetry.bloomStrength") private var bloomStrength = 0.72
     @AppStorage("DockTelemetry.scanlineStrength") private var scanlineStrength = 0.22
     @AppStorage("DockTelemetry.noiseStrength") private var noiseStrength = 0.32
@@ -75,13 +78,9 @@ struct SettingsView: View {
     @AppStorage("DockTelemetry.marketClock2") private var marketClock2 = "America/Los_Angeles"
     @AppStorage("DockTelemetry.marketClock3") private var marketClock3 = "Europe/London"
     @AppStorage("DockTelemetry.weatherForecastDays") private var weatherForecastDays = 5
-    @AppStorage("DockTelemetry.radarWidthCorrection") private var radarWidthCorrection = 1.10
-    @AppStorage("DockTelemetry.radarHeightCorrection") private var radarHeightCorrection = 0.9254
     @AppStorage("DockTelemetry.outputResolutionPreset") private var outputResolutionPreset = OutputResolutionPreset.matchDisplay.id
     @AppStorage("DockTelemetry.customOutputWidth") private var customOutputWidth = 960
     @AppStorage("DockTelemetry.customOutputHeight") private var customOutputHeight = 540
-    @AppStorage("DockTelemetry.globeWidthCorrection") private var globeWidthCorrection = 1.10
-    @AppStorage("DockTelemetry.globeHeightCorrection") private var globeHeightCorrection = 0.9254
     @State private var selectedDisplayID = 0
     @State private var displaySelectionLoaded = false
     @State private var displayRefresh = UUID()
@@ -92,7 +91,13 @@ struct SettingsView: View {
     @State private var marketKeyConfigured = false
     @State private var marketCredentialMessage: String?
     @State private var cycleDurationDraft = ""
+    @State private var typographyScene: ConsoleScene = .system
     @State private var page: Page = .general
+
+    private func typographyBinding(_ role: ConsoleFontRole) -> Binding<Double> {
+        Binding(get: { layouts.typography(for: typographyScene)[role] },
+                set: { layouts.setFontScale($0, role: role, scene: typographyScene) })
+    }
 
     private var screens: [NSScreen] {
         _ = displayRefresh
@@ -254,30 +259,31 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section("Weather forecast") {
+                WeatherRegionPicker()
+                Text("Automatic chooses Israel, North America or Europe from the existing location permission. Manual selection works without permission and changes only the radar map, not your local hourly/daily forecast.")
+                    .font(.caption).foregroundStyle(.secondary)
                 Stepper("Daily outlook: \(weatherForecastDays) days", value: $weatherForecastDays, in: 3...7)
                 Text("The weather screen always shows the next 12 hourly points plus the selected number of daily forecast rows.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Section("Typography") {
-                LabeledContent("Primary values") {
-                    Slider(value: $layouts.fontScale, in: 0.75...2.0).frame(width: 260)
+                Toggle("Apply to all views", isOn: $layouts.globalTypographyEnabled)
+                if !layouts.globalTypographyEnabled {
+                    Picker("View", selection: $typographyScene) {
+                        ForEach(ConsoleScene.allCases, id: \.self) { Text($0.tabTitle).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
                 }
-                Text("Primary \(Int(layouts.fontScale * 100))%")
-                    .font(.system(.caption2, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                LabeledContent("Secondary text") {
-                    Slider(value: $layouts.secondaryFontScale, in: 0.65...2.0).frame(width: 260)
+                ForEach(ConsoleFontRole.allCases, id: \.self) { role in
+                    LabeledContent(role.title) {
+                        Slider(value: typographyBinding(role), in: (role == .primary ? 0.75 : 0.65)...3.0).frame(width: 240)
+                        Text("\(Int(layouts.typography(for: typographyScene)[role] * 100))%")
+                            .monospacedDigit().frame(width: 44)
+                    }
                 }
-                Text("Labels and headings \(Int(layouts.secondaryFontScale * 100))%")
-                    .font(.system(.caption2, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                LabeledContent("Other text") {
-                    Slider(value: $layouts.auxiliaryFontScale, in: 0.65...2.0).frame(width: 260)
-                }
-                Text("Chrome, status, and remaining text \(Int(layouts.auxiliaryFontScale * 100))%")
-                    .font(.system(.caption2, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                Text("Dark texts controls all dim, less-phosphorescent text—including labels and titles. Main text controls bright labels and names.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             Section("Visual style") {
                 Toggle("Synthwave colors", isOn: Binding(
@@ -331,32 +337,32 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                Toggle("CRT tube curvature", isOn: $crtTubeEnabled)
+                    .disabled(!CRTTubeEffect.isAvailable)
+                LabeledContent("Curvature strength") {
+                    Slider(value: $crtTubeStrength, in: 0...1).frame(width: 220)
+                    Text("\(Int(crtTubeStrength * 100))%")
+                        .monospacedDigit().frame(width: 40, alignment: .trailing)
+                }
+                .disabled(!crtTubeEnabled || !CRTTubeEffect.isAvailable)
+                if !CRTTubeEffect.isAvailable {
+                    Text("Use a packaged app build to enable CRT curvature.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Text("Curves every live scene. The layout editor stays flat for precise positioning.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Text("The selected style applies to every telemetry, weather, and vector scene.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section("Radar shape") {
-                LabeledContent("Radar width") {
-                    Slider(value: $radarWidthCorrection, in: 0.70...1.35).frame(width: 220)
+            Section("Performance") {
+                Picker("Animation frame rate", selection: $animationFrameRate) {
+                    Text("15 fps — lower CPU use").tag(15.0)
+                    Text("30 fps — balanced").tag(30.0)
+                    Text("60 fps — smoother, higher CPU use").tag(60.0)
                 }
-                Text("Width \(String(format: "%.0f%%", radarWidthCorrection * 100))")
-                    .font(.system(.caption2, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                LabeledContent("Radar height") {
-                    Slider(value: $radarHeightCorrection, in: 0.70...1.35).frame(width: 220)
-                }
-                Text("Height \(String(format: "%.0f%%", radarHeightCorrection * 100))")
-                    .font(.system(.caption2, design: .monospaced))
-                    .foregroundStyle(.secondary)
-            }
-            Section("Globe shape") {
-                LabeledContent("Globe width") {
-                    Slider(value: $globeWidthCorrection, in: 0.70...1.35).frame(width: 220)
-                }
-                LabeledContent("Globe height") {
-                    Slider(value: $globeHeightCorrection, in: 0.70...1.35).frame(width: 220)
-                }
-                Text("Use these only to compensate for unusual physical display scaling; equal values keep the globe mathematically round.")
+                Text("Vectors and CRT effects use small native GPU layers; text and readings do not redraw every animation frame. CPU, GPU, memory, and network update once a second; battery power every 5 seconds and disk space every 30 seconds. Hidden or sleeping output does not render scenes.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -515,6 +521,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             "DockTelemetry.sceneOrder": SceneOrder.defaultValue,
             "DockTelemetry.coverMenuBar": true,
             "DockTelemetry.crtEnabled": true,
+            "DockTelemetry.animationFrameRate": 30.0,
+            "DockTelemetry.crtTubeEnabled": false,
+            "DockTelemetry.crtTubeStrength": 0.35,
+            "DockTelemetry.signalDisplayMode": SignalDisplayMode.spinning.rawValue,
             "DockTelemetry.bloomStrength": 0.80466796875,
             "DockTelemetry.scanlineStrength": 0.8629296875,
             "DockTelemetry.noiseStrength": 0.82953125,
@@ -674,14 +684,19 @@ private final class SignalHolder {
 @MainActor
 final class DisplayWindowController {
     private let window: ConsoleWindow
+    private let renderState = ConsoleRenderState()
     private var screenObserver: NSObjectProtocol?
     private var defaultsObserver: NSObjectProtocol?
+    private var visibilityObserver: NSObjectProtocol?
+    private var sleepObservers: [NSObjectProtocol] = []
+    private var displaySleeping = false
+    private var lastWindowSettings: [String: AnyHashable] = [:]
     private var requestedVisible = true
 
     var isRequestedVisible: Bool { requestedVisible }
 
     init() {
-        let root = AdaptiveConsoleRoot()
+        let root = AdaptiveConsoleRoot(renderState: renderState)
         window = ConsoleWindow(
             contentRect: NSRect(x: 0, y: 0, width: 960, height: 540),
             styleMask: [.borderless],
@@ -713,15 +728,43 @@ final class DisplayWindowController {
             guard let owner = self else { return }
             Task { @MainActor in
                 owner.applyWindowLevel()
+                let settings = owner.windowSettingsSnapshot()
+                guard settings != owner.lastWindowSettings else { return }
+                owner.lastWindowSettings = settings
                 owner.moveToPreferredDisplay(force: true)
             }
         }
+        visibilityObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didChangeOcclusionStateNotification, object: window, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.updateRenderingState() }
+        }
+        let workspaceCenter = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.screensDidSleepNotification, NSWorkspace.willSleepNotification] {
+            sleepObservers.append(workspaceCenter.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in
+                    self?.displaySleeping = true
+                    self?.updateRenderingState()
+                }
+            })
+        }
+        for name in [NSWorkspace.screensDidWakeNotification, NSWorkspace.didWakeNotification] {
+            sleepObservers.append(workspaceCenter.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in
+                    self?.displaySleeping = false
+                    self?.updateRenderingState()
+                }
+            })
+        }
         applyWindowLevel()
+        lastWindowSettings = windowSettingsSnapshot()
     }
 
     deinit {
         if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
         if let defaultsObserver { NotificationCenter.default.removeObserver(defaultsObserver) }
+        if let visibilityObserver { NotificationCenter.default.removeObserver(visibilityObserver) }
+        for observer in sleepObservers { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
     }
 
     func show() {
@@ -731,12 +774,14 @@ final class DisplayWindowController {
         } else {
             window.orderOut(nil)
         }
+        updateRenderingState()
     }
 
     func toggle() {
         if window.isVisible || requestedVisible {
             requestedVisible = false
             window.orderOut(nil)
+            updateRenderingState()
         } else {
             show()
         }
@@ -746,6 +791,7 @@ final class DisplayWindowController {
     func moveToPreferredDisplay(force: Bool) -> Bool {
         guard let target = preferredScreen() else {
             window.orderOut(nil)
+            updateRenderingState()
             return false
         }
         if force || window.screen?.displayID != target.displayID || !window.isVisible {
@@ -758,7 +804,13 @@ final class DisplayWindowController {
             window.setFrame(NSRect(origin: origin, size: size), display: true)
         }
         if requestedVisible { window.orderFrontRegardless() }
+        updateRenderingState()
         return true
+    }
+
+    private func updateRenderingState() {
+        let visible = requestedVisible && window.isVisible && window.occlusionState.contains(.visible) && !displaySleeping
+        if renderState.isRendering != visible { renderState.isRendering = visible }
     }
 
     private func displayConfigurationChanged() {
@@ -767,9 +819,21 @@ final class DisplayWindowController {
     }
 
     private func applyWindowLevel() {
-        window.level = UserDefaults.standard.bool(forKey: "DockTelemetry.coverMenuBar")
+        let level: NSWindow.Level = UserDefaults.standard.bool(forKey: "DockTelemetry.coverMenuBar")
             ? Self.consoleLevel
             : .normal
+        if window.level != level { window.level = level }
+    }
+
+    private func windowSettingsSnapshot() -> [String: AnyHashable] {
+        let keys = [DisplayPreference.idKey, "DockTelemetry.preferredDisplayName",
+                    "DockTelemetry.preferredDisplayWidth", "DockTelemetry.preferredDisplayHeight",
+                    "DockTelemetry.outputResolutionPreset", "DockTelemetry.customOutputWidth",
+                    "DockTelemetry.customOutputHeight"]
+        return Dictionary(uniqueKeysWithValues: keys.compactMap { key in
+            guard let value = UserDefaults.standard.object(forKey: key) as? AnyHashable else { return nil }
+            return (key, value)
+        })
     }
 
     private func outputSize(for screen: NSScreen) -> NSSize {
@@ -808,12 +872,13 @@ final class DisplayWindowController {
 }
 
 private struct AdaptiveConsoleRoot: View {
+    @ObservedObject var renderState: ConsoleRenderState
     var body: some View {
         GeometryReader { proxy in
             let scale = min(proxy.size.width / 960, proxy.size.height / 540)
             ZStack {
                 Color.black
-                ConsoleView()
+                ConsoleView(renderState: renderState)
                     .frame(width: 960, height: 540)
                     .scaleEffect(scale)
                     .position(x: proxy.size.width / 2, y: proxy.size.height / 2)

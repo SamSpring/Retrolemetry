@@ -10,6 +10,8 @@ struct TelemetrySnapshot {
     var networkOut: Double = 0
     var uptime: TimeInterval = ProcessInfo.processInfo.systemUptime
     var load: (Double, Double, Double) = (0, 0, 0)
+    var gpu: Double?
+    var power = PowerReading()
 }
 
 @MainActor
@@ -18,10 +20,14 @@ final class TelemetryModel: ObservableObject {
     @Published private(set) var cpuHistory: [Double] = Array(repeating: 0, count: 96)
     @Published private(set) var memoryHistory: [Double] = Array(repeating: 0, count: 96)
     @Published private(set) var networkHistory: [Double] = Array(repeating: 0, count: 96)
+    @Published private(set) var gpuHistory: [Double?] = Array(repeating: nil, count: 96)
 
     private var timer: Timer?
     private var previousCPU: (idle: UInt64, total: UInt64)?
     private var previousNetwork: (input: UInt64, output: UInt64, time: TimeInterval)?
+    private var lastDiskSample = Date.distantPast
+    private var lastPowerSample = Date.distantPast
+    private let hardware = HardwareMetricsReader()
 
     init() {
         sample()
@@ -35,25 +41,36 @@ final class TelemetryModel: ObservableObject {
     deinit { timer?.invalidate() }
 
     private func sample() {
-        snapshot.cpu = cpuUsage()
-        snapshot.memory = memoryUsage()
-        snapshot.disk = diskUsage()
+        var next = snapshot
+        next.cpu = cpuUsage()
+        next.memory = memoryUsage()
+        next.gpu = hardware.gpuUsage()
+        if Date().timeIntervalSince(lastPowerSample) >= 5 {
+            next.power = hardware.powerReading()
+            lastPowerSample = Date()
+        }
+        if Date().timeIntervalSince(lastDiskSample) >= 30 {
+            next.disk = diskUsage()
+            lastDiskSample = Date()
+        }
         let network = networkRates()
-        snapshot.networkIn = network.input
-        snapshot.networkOut = network.output
-        snapshot.uptime = ProcessInfo.processInfo.systemUptime
+        next.networkIn = network.input
+        next.networkOut = network.output
+        next.uptime = ProcessInfo.processInfo.systemUptime
 
         var averages = [Double](repeating: 0, count: 3)
         if getloadavg(&averages, 3) == 3 {
-            snapshot.load = (averages[0], averages[1], averages[2])
+            next.load = (averages[0], averages[1], averages[2])
         }
+        snapshot = next
 
         append(snapshot.cpu, to: &cpuHistory)
         append(snapshot.memory, to: &memoryHistory)
+        append(snapshot.gpu, to: &gpuHistory)
         append(min(1, (snapshot.networkIn + snapshot.networkOut) / 12_000_000), to: &networkHistory)
     }
 
-    private func append(_ value: Double, to history: inout [Double]) {
+    private func append<Value>(_ value: Value, to history: inout [Value]) {
         history.append(value)
         if history.count > 96 { history.removeFirst(history.count - 96) }
     }

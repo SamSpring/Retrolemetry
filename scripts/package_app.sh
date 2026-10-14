@@ -31,6 +31,22 @@ mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources" "$OUTPUT_DIR" "$DIST_DIR"
 cp "$BINARY" "$CONTENTS/MacOS/$APP_NAME"
 cp "$INFO_PLIST" "$CONTENTS/Info.plist"
 
+# Generate all standard/Retina sizes from the approved transparent icon master.
+swift scripts/render_app_icon.swift Resources/AppIcon.png "$STAGING_DIR/AppIcon.iconset"
+iconutil --convert icns --output "$CONTENTS/Resources/AppIcon.icns" "$STAGING_DIR/AppIcon.iconset"
+
+# Native SwiftUI CRT curvature uses a small Metal shader, compiled once at packaging.
+if [ -n "${PREBUILT_METALLIB:-}" ]; then
+    cp "$PREBUILT_METALLIB" "$CONTENTS/Resources/default.metallib"
+else
+xcrun -sdk macosx metal -std=metal3.1 -mmacosx-version-min=14.0 -c Resources/CRT.metal -o "$STAGING_DIR/CRT.air"
+xcrun -sdk macosx metallib "$STAGING_DIR/CRT.air" -o "$CONTENTS/Resources/default.metallib"
+fi
+# A source run from this build directory can use the same precompiled GPU library.
+if [ -z "${PREBUILT_BINARY:-}" ]; then
+    cp "$CONTENTS/Resources/default.metallib" "$BIN_DIR/default.metallib"
+fi
+
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$CONTENTS/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$CONTENTS/Info.plist"
 xattr -cr "$APP_BUNDLE"
