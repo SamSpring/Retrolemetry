@@ -12,7 +12,7 @@ It remembers a dedicated display, waits safely if that screen is disconnected, s
 
 The project is open source under MIT. No Electron, accounts, analytics, or API keys. Weather is optional and uses Core Location plus Open-Meteo.
 
-GitHub / download: [RELEASE URL]
+GitHub / download: https://github.com/SamSpring/Retrolemetry/releases/tag/v1.0.0
 
 I would especially appreciate feedback from people using unusual dock displays or compact HDMI screens.
 
@@ -24,7 +24,7 @@ Retrolemetry turns a compact secondary display into a live system console. It ha
 
 The app is native SwiftUI/AppKit, runs from the menu bar, remembers its target display, and hides instead of jumping onto the main screen when that display disconnects. It is open source under MIT and has no accounts or analytics.
 
-Project and download: [RELEASE URL]
+Project and download: https://github.com/SamSpring/Retrolemetry/releases/tag/v1.0.0
 
 ## Show HN
 
@@ -36,7 +36,7 @@ I built it to solve the awkward parts of using a dock display: it remembers a sp
 
 The package has no third-party dependencies, Electron runtime, accounts, analytics, or embedded API keys. macOS 14+; MIT licensed.
 
-Code and release: [RELEASE URL]
+Code and release: https://github.com/SamSpring/Retrolemetry
 
 I would welcome feedback on the display-selection behavior, packaging, and other small-screen hardware people want to support.
 
@@ -48,10 +48,10 @@ Retrolemetry is a native, open-source macOS console for compact secondary displa
 
 If you enjoy the app, a tip helps cover Apple developer costs, test hardware, and time spent improving compatibility and polish. Retrolemetry remains MIT licensed and available on GitHub.
 
-Download and source: [GITHUB URL]
+Download and source: https://github.com/SamSpring/Retrolemetry
 
 Thank you for supporting small, focused Mac software.
 
 ## Short Ko-fi announcement
 
-Retrolemetry v1.0.0 is out: a native, open-source macOS telemetry console for tiny secondary displays. Four animated views, optional local weather, display memory, layout controls, and no Electron or analytics. Download it here: [RELEASE URL]
+Retrolemetry v1.0.0 is out: a native, open-source macOS telemetry console for tiny secondary displays. Four animated views, optional local weather, display memory, layout controls, and no Electron or analytics. Download it here: https://github.com/SamSpring/Retrolemetry/releases/tag/v1.0.0

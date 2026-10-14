@@ -737,22 +737,25 @@ final class DisplayWindowController {
         visibilityObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didChangeOcclusionStateNotification, object: window, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.updateRenderingState() }
+            guard let owner = self else { return }
+            Task { @MainActor in owner.updateRenderingState() }
         }
         let workspaceCenter = NSWorkspace.shared.notificationCenter
         for name in [NSWorkspace.screensDidSleepNotification, NSWorkspace.willSleepNotification] {
             sleepObservers.append(workspaceCenter.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                guard let owner = self else { return }
                 Task { @MainActor in
-                    self?.displaySleeping = true
-                    self?.updateRenderingState()
+                    owner.displaySleeping = true
+                    owner.updateRenderingState()
                 }
             })
         }
         for name in [NSWorkspace.screensDidWakeNotification, NSWorkspace.didWakeNotification] {
             sleepObservers.append(workspaceCenter.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                guard let owner = self else { return }
                 Task { @MainActor in
-                    self?.displaySleeping = false
-                    self?.updateRenderingState()
+                    owner.displaySleeping = false
+                    owner.updateRenderingState()
                 }
             })
         }

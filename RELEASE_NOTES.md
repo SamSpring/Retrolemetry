@@ -43,6 +43,6 @@ If live market data is configured, ticker symbols are sent directly to Finnhub a
 - GPU utilization depends on optional driver counters and shows N/A on unsupported hardware. Battery wattage is electrical flow through the battery, not total Mac or CPU/GPU consumption; voltage/current may be unavailable. Temperature sensors are not included.
 - Launch at Login requires the bundled app to be installed in a stable location such as `/Applications`.
 
-## Artifact status before publication
+## Release integrity
 
-The current repository packaging path creates a valid app bundle with an ad-hoc signature by default. **v1.0.0 has not yet been Developer ID signed or notarized.** Replace this status only after Apple's notarization service succeeds and the ticket is stapled and validated.
+The v1.0.0 release candidate is universal for Apple silicon and Intel, signed with a Developer ID Application certificate, accepted by Apple's notarization service, and contains a stapled notarization ticket. When the release is published, `SHA256SUMS.txt` will contain the checksum for the exact release ZIP.
