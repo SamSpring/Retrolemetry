@@ -7,8 +7,9 @@ fetch("release.json").then(response => {
 }).then(release => {
   const repoOK = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(release.repositoryUrl || "");
   const expected = `${release.repositoryUrl}/releases/download/v${release.version}/Retrolemetry-${release.version}.zip`;
-  if (repoOK && release.downloadUrl === expected && release.notarized === true && release.publicDownloadVerified === true && release.architecture === "universal" && release.minimumMacOS === "14.0" && /^[a-f0-9]{64}$/.test(release.sha256 || "")) {
+  if (repoOK && /^\d+\.\d+\.\d+$/.test(release.version || "") && release.downloadUrl === expected && release.notarized === true && release.publicDownloadVerified === true && release.architecture === "universal" && release.minimumMacOS === "14.0" && /^[a-f0-9]{64}$/.test(release.sha256 || "")) {
     download.href = release.downloadUrl;
+    download.textContent = "Download for Mac";
     statusLine.textContent = `Retrolemetry ${release.version} · Developer ID signed and notarized. `;
     const checksum = document.createElement("a");
     checksum.href = `${release.repositoryUrl}/releases/download/v${release.version}/SHA256SUMS.txt`;
@@ -16,5 +17,5 @@ fetch("release.json").then(response => {
     statusLine.append(checksum);
   }
 }).catch(() => {
-  // Verified links remain available in the HTML without JavaScript.
+  // Keep the source link and preparation notice if metadata cannot be verified.
 });

@@ -1,16 +1,16 @@
 # Retrolemetry launch copy
 
-Replace bracketed links and attach a clean native-resolution screenshot or short capture before posting.
+Drafts for use after v1.0.0 is published. Confirm the release/download links work, check each community's current posting rules, and attach a clean native-resolution screenshot or short capture before posting.
 
 ## r/macapps
 
 **Title:** Retrolemetry — a native system console for tiny secondary Mac displays
 
-I built Retrolemetry for the 960×540 display in a Mac dock, but it works with any secondary display that can accommodate its fixed-size console. It is a lightweight SwiftUI/AppKit menu-bar app with live CPU, memory, disk, network, load, uptime, local weather, and four animated vector-style views.
+I built Retrolemetry for the 960×540 display in a Mac dock. Its console scales proportionally to other macOS-visible displays. It is a SwiftUI/AppKit menu-bar app with local CPU, memory, disk, network, GPU and battery-flow readings, optional weather and market data, and four animated views.
 
 It remembers a dedicated display, waits safely if that screen is disconnected, supports Launch at Login, and includes a visual layout editor plus green-phosphor and synthwave themes. There is also a `SIGUSR1` toggle for BetterTouchTool automation.
 
-The project is open source under MIT. No Electron, accounts, analytics, or API keys. Weather is optional and uses Core Location plus Open-Meteo.
+The app code is open source under MIT. There is no Electron, account, analytics, or bundled credential. Weather uses Core Location plus Open-Meteo; optional live quotes use your own Finnhub key stored in Keychain. In-app updates use Sparkle with signed feeds and downloads.
 
 GitHub / download: https://github.com/SamSpring/Retrolemetry/releases/tag/v1.0.0
 
@@ -20,9 +20,9 @@ I would especially appreciate feedback from people using unusual dock displays o
 
 **Title:** I made a native macOS telemetry display for the tiny screen in my dock
 
-Retrolemetry turns a compact secondary display into a live system console. It has CPU, memory, disk and network telemetry, animated radar and vector scenes, optional local weather, two visual themes, and a layout editor for tuning everything to a physical 960×540 screen.
+Retrolemetry turns a compact secondary display into a live system console. It has CPU, memory, disk and network telemetry, animated weather and vector scenes, optional local weather and market data, two visual themes, and a layout editor. Its 960×540 composition scales proportionally to other display sizes.
 
-The app is native SwiftUI/AppKit, runs from the menu bar, remembers its target display, and hides instead of jumping onto the main screen when that display disconnects. It is open source under MIT and has no accounts or analytics.
+The app is native SwiftUI/AppKit, runs from the menu bar, remembers its target display, and hides instead of jumping onto the main screen when that display disconnects. It includes signed in-app updates through Sparkle. The app code is MIT licensed, with no accounts or analytics.
 
 Project and download: https://github.com/SamSpring/Retrolemetry/releases/tag/v1.0.0
 
@@ -30,11 +30,11 @@ Project and download: https://github.com/SamSpring/Retrolemetry/releases/tag/v1.
 
 **Title:** Show HN: Retrolemetry – a native macOS console for dedicated mini displays
 
-Retrolemetry is an open-source SwiftUI/AppKit menu-bar app that turns a 960×540 secondary display into a live system and vector console.
+Retrolemetry is an open-source SwiftUI/AppKit menu-bar app that turns a secondary display into a live system and vector console. It began on a 960×540 dock display and now scales to other display sizes.
 
 I built it to solve the awkward parts of using a dock display: it remembers a specific monitor, restores itself after reconnection, can cover only that display's menu bar, and stays hidden rather than moving to the primary display when its target is absent. It includes real CPU, memory, disk, network, load and uptime data; four animated views; optional Open-Meteo weather; layout editing; and signal-based automation for BetterTouchTool.
 
-The package has no third-party dependencies, Electron runtime, accounts, analytics, or embedded API keys. macOS 14+; MIT licensed.
+The console is native SwiftUI/AppKit with Metal rendering; Sparkle 2 handles signed update checks, downloads, installation, and relaunch. No Electron, accounts, analytics, or embedded API keys. Optional Finnhub quotes use your own Keychain-protected key. macOS 14+; application code MIT licensed.
 
 Code and release: https://github.com/SamSpring/Retrolemetry
 

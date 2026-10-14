@@ -2,8 +2,11 @@
 
 All notable changes to Retrolemetry will be documented here. This project follows [Semantic Versioning](https://semver.org/).
 
-## [1.0.0] - 2026-10-14
+## Unreleased
 
+The first public release is planned as v1.0.0. Its release date will be recorded when it is published.
+
+- Bundled the application's MIT license and map-data notices alongside Sparkle's license
 - Added Sparkle 2.10.0 update checks, verified download/install/relaunch, a dedicated Retrolemetry signing key and signed HTTPS feed, and an automatic-check setting; existing preferences, layouts, credentials and login identity remain unchanged
 - Embedded and signed Sparkle's nested helpers before outer app signing; added private feed preparation, reproducible dependency locking and isolated native updater QA
 - Added the approved split phosphor-green/synthwave app icon, transparent native edges and all standard/Retina icon sizes; the menu-bar waveform stays unchanged
@@ -46,7 +49,7 @@ All notable changes to Retrolemetry will be documented here. This project follow
 
 ### Earlier release-preparation changes
 
-### Added
+#### Added
 
 - First public macOS release preparation
 - Four animated telemetry and vector scenes
@@ -71,7 +74,7 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Signal-grid animation controls for motion, telemetry source, pattern, and response speed
 - Weather-driven radar targets for precipitation, temperature, and wind, plus optional target pulsing
 
-### Changed
+#### Changed
 
 - Public package, product, target, executable, and process name standardized as Retrolemetry
 - Existing `DockTelemetry.*` preference keys retained to preserve settings for early builds
@@ -84,5 +87,3 @@ All notable changes to Retrolemetry will be documented here. This project follow
 - Settings now use one AppKit-owned window, preventing duplicate windows after backup export and eliminating unused top space
 - Signal grids now span beyond the viewport, show the selected live input in the header, and use stronger data-driven terrain motion with a synthwave-pink horizon
 - The layout editor now uses its lower workspace for typography, modules, and selected-module controls instead of a narrow scrolling sidebar
-
-[1.0.0]: https://github.com/SamSpring/Retrolemetry/releases/tag/v1.0.0

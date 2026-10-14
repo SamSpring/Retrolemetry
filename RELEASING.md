@@ -4,10 +4,12 @@ This checklist produces a downloadable macOS app from the Swift Package. Do not 
 
 Publication of v1.0.0 is currently held. Work remains on `agent/release-prep`, draft PR #1. Do not merge, tag, create a release, deploy Pages or install a QA build as a side effect of preparation.
 
+The retained universal updater-enabled build 20 passed signing, notarization, stapling, Gatekeeper checks, unit tests and the native shared-code updater harness. The packager now also includes the application license and map-data notices; this requires a new signed/notarized build 21 and a fresh signed appcast before acceptance. Preserve the build-20 archive and evidence rather than editing it. Exact production-app VM acceptance and a separately verified updater-key recovery backup remain pending. A host kernel panic interrupted VM preparation before Retrolemetry was installed in the guest; final VM acceptance is deferred until suitable storage is connected. Use a fresh standalone RAW VM on native APFS storage for the next acceptance session, and retain existing VM images and saved states. Do not treat the shared-code harness as final production-app acceptance.
+
 ## 1. Prepare the release
 
 - Update `CHANGELOG.md` with the version and date.
-- Update the version and increasing numeric build in `Resources/Info.plist` and confirm `RELEASE_NOTES.md`. The first updater-enabled candidate is build 20; never offer a lower build than an existing installed/released build.
+- Update the version and increasing numeric build in `Resources/Info.plist` and confirm `RELEASE_NOTES.md`. The next candidate is build 21; never offer a lower build than an existing installed/released build.
 - Add privacy-safe screenshots under `assets/screenshots/`.
 - Confirm the working tree is clean and GitHub Actions passes.
 
@@ -16,14 +18,14 @@ Publication of v1.0.0 is currently held. Work remains on `agent/release-prep`, d
 Install the current full Xcode release and select it with `xcode-select`. Then run:
 
 ```sh
-UNIVERSAL=1 VERSION=1.0.0 BUILD_NUMBER=20 \
+UNIVERSAL=1 VERSION=1.0.0 BUILD_NUMBER=21 \
   CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
   ./scripts/package_app.sh
 ```
 
 This creates `build/Retrolemetry.app` and `dist/Retrolemetry-1.0.0.zip`. The stable bundle identifier is `io.github.SamSpring.Retrolemetry`. The app bundle contains the location usage description required by Core Location. `SMAppService.mainApp` handles Launch at Login and does not require a separate helper target.
 
-Sparkle 2.10.0 is pinned in `Package.swift` and `Package.resolved`. The packager uses its official SwiftPM binary artifact, embeds the intact framework with symlinks, includes its license, then signs Downloader.xpc, Installer.xpc, Autoupdate, Updater.app and the framework, in that order, preserving helper entitlements. It signs the outer app last with hardened runtime and a secure timestamp. Public apps must not disable library validation. CI-only ad-hoc packages are not distribution builds.
+Sparkle 2.10.0 is pinned in `Package.swift` and `Package.resolved`. The packager uses its official SwiftPM binary artifact, embeds the intact framework with symlinks, includes its license alongside the application license and data notices, then signs Downloader.xpc, Installer.xpc, Autoupdate, Updater.app and the framework, in that order, preserving helper entitlements. It signs the outer app last with hardened runtime and a secure timestamp. Public apps must not disable library validation. CI-only ad-hoc packages are not distribution builds.
 
 Prefer `SWIFT_SCRATCH_PATH`, `OUTPUT_DIR` and `DIST_DIR` on non-cloud local storage. For example, set `SWIFT_SCRATCH_PATH=/private/tmp/retrolemetry-release-build` when the source is cloud-synced. The packaging script resolves and embeds Sparkle from that same scratch directory. Both QA/feed scripts accept `--sparkle-tools /private/tmp/retrolemetry-release-build/artifacts/sparkle/Sparkle/bin`. Validate a fresh extraction of the final ZIP, not just the staging app; cloud sync can damage unpacked frameworks. Keep the final archive immutable.
 
@@ -95,3 +97,6 @@ That harness is a real native updater test, but is not final acceptance of the e
 - Deploy the existing manual Pages workflow from approved `main` only after the public Release download exists. Do not upload private feed staging, QA fixtures, validation logs, certificates or keys.
 - Fetch the HTTPS feed back after deployment and verify its signature and exact public archive. Private loopback QA does not prove the public endpoint is live.
 - Remove the pre-publication warning from public release notes only after final acceptance and notarization are confirmed.
+- Move the changelog's unreleased changes under `1.0.0` with the actual publication date.
+
+The site defaults to a source link and a preparation notice. Its Download button and signature/checksum wording activate only when `site/release.json` contains the verified public release metadata. Keep those flags false until the public ZIP is fetched and checked. The manual Pages workflow deploys only from `main`.

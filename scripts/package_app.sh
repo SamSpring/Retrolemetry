@@ -31,6 +31,8 @@ fi
 mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources" "$OUTPUT_DIR" "$DIST_DIR"
 cp "$BINARY" "$CONTENTS/MacOS/$APP_NAME"
 cp "$INFO_PLIST" "$CONTENTS/Info.plist"
+cp LICENSE "$CONTENTS/Resources/Retrolemetry-LICENSE.txt"
+cp NOTICE.txt "$CONTENTS/Resources/Retrolemetry-NOTICE.txt"
 
 # SwiftPM links Sparkle but does not assemble the .app. Keep helpers, symlinks
 # and signatures intact, and re-sign nested code before signing the outer app.

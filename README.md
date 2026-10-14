@@ -1,6 +1,6 @@
 # Retrolemetry
 
-Retrolemetry turns a secondary Mac display into a native, animated system console. Its composition is designed at 960×540, then scales proportionally to Mac, iPad/Sidecar, phone-landscape, and custom display sizes without distorting the layout. It stays out of the Dock and uses SwiftUI and AppKit—no Electron or web view.
+Retrolemetry turns a secondary Mac display into a native, animated system console. Its composition is designed at 960×540, then scales proportionally to Mac, iPad/Sidecar, phone-landscape, and custom display sizes without distorting the layout. It stays out of the Dock and uses SwiftUI and AppKit—no Electron.
 
 ![Retrolemetry Signal Analysis](assets/screenshots/retrolemetry-signal-analysis.png)
 
@@ -13,7 +13,7 @@ Retrolemetry turns a secondary Mac display into a native, animated system consol
 ### Live console
 
 - CPU, memory, disk, network, load average, and uptime telemetry, plus optional GPU utilization and battery power/voltage
-- Four views: System Telemetry, Sector Scan, Signal Analysis, and Live System Metrics
+- Four views: Market Watch, Weather, Signal Analysis, and Live System Metrics
 - A dedicated live stock-market screen with a rotating globe, separate world clocks, two five-symbol ticker boards, a click-to-cycle Today/Week/Month/Year focus chart, and a compact USD→ILS reference-rate history
 - Green-phosphor and synthwave themes, plus adjustable bloom, scan bands, noise, vignette, and dual VHS tracking lines
 - 30 fps animation by default, with 15/60 fps options in Settings; only moving elements refresh rapidly, and hidden or sleeping output pauses animation
@@ -58,12 +58,14 @@ Live System Metrics includes separately movable GPU, power/voltage, and GPU-hist
 
 ## Install from GitHub Releases
 
+The first public download is still in preparation. The following steps apply once v1.0.0 appears on the Releases page; source builds are available now.
+
 1. Download the latest `Retrolemetry-*.zip` from [GitHub Releases](https://github.com/SamSpring/Retrolemetry/releases).
 2. Unzip it and move `Retrolemetry.app` to `/Applications`.
 3. Open Retrolemetry. Grant location access only if you want local weather.
 4. Use the waveform icon in the menu bar to choose the dock display and adjust Settings.
 
-The release page should state whether a build is signed and notarized. A locally built or unsigned archive may trigger additional macOS security prompts; the repository does not claim notarization until a release has actually completed Apple's notarization service.
+The public release will provide a universal app for Apple silicon and Intel, a Developer ID signature, Apple notarization, and a ZIP checksum. Local builds use an ad-hoc signature by default and are not notarized.
 
 ## Build from source
 
@@ -79,7 +81,7 @@ To produce a standard app bundle and zip in `build/` and `dist/`:
 ./scripts/package_app.sh
 ```
 
-Use Xcode or Command Line Tools whose Swift compiler and macOS SDK versions match. The packaging script applies an ad-hoc signature unless `CODESIGN_IDENTITY` is set to a Developer ID Application identity.
+Use a matching Swift 6 or later compiler and macOS SDK. Packaging requires full Xcode with its Metal tools. The packaging script applies an ad-hoc signature unless `CODESIGN_IDENTITY` is set to a Developer ID Application identity. Sparkle 2.10.0 is pinned in `Package.swift` and `Package.resolved`; the initial source build downloads its official Swift Package artifact.
 
 Packaging converts the approved transparent `Resources/AppIcon.png` into all standard and Retina macOS icon sizes. The app icon combines phosphor green on the left and synthwave cyan/magenta on the right; the menu-bar waveform stays monochrome.
 
@@ -93,7 +95,6 @@ Packaging also compiles the CRT curvature shader with Xcode's Metal tools. If a 
 - Double-click anywhere on the live console: pause/resume the slideshow without changing the selected stock or radar mode. Horizontal navigation remains available while paused.
 - Menu-bar waveform: show/hide, toggle synthwave colors, move display, open Settings, or quit
 - `⌘⇧D` toggles the console and `⌘⇧S` toggles synthwave while Retrolemetry is active
-- `⌘⇧D`: show or hide while the menu is active
 
 For BetterTouchTool, add a **Run Shell Script / Task** action:
 
@@ -111,21 +112,21 @@ killall -USR2 Retrolemetry
 
 ## Display setup and Launch at Login
 
-Retrolemetry starts as a menu-bar accessory app and centers its fixed-size window on the selected display. If no display is selected, it chooses the smallest connected external display. You can turn off menu-bar covering or change the target in Settings.
+Retrolemetry starts as a menu-bar accessory app and centers its proportionally scaled console on the selected display. If no display is selected, it chooses the smallest connected external display. You can turn off menu-bar covering or change the target in Settings.
 
 **Launch Retrolemetry at login** uses Apple's `SMAppService.mainApp`. It is intended for an installed `.app` bundle in `/Applications`; it is not available when running the raw Swift Package executable from Terminal.
 
-## Privacy and weather
-
-Retrolemetry has no accounts, analytics, advertising, or bundled tracking SDKs. System telemetry is read and displayed locally.
-
-### Updates
+## Updates
 
 Choose **Check for Updates…** from Retrolemetry's menu-bar menu (or Settings → Updates). [Sparkle 2](https://sparkle-project.org/) downloads the update, verifies it, installs it and relaunches the app. Updates preserve the existing preference domain, saved layouts, Keychain credentials and login-item identity. Settings also lets you opt in or out of automatic update checks.
 
 The dedicated HTTPS update feed is `https://samspring.github.io/Retrolemetry/appcast.xml`. Both the feed and update archives must carry Retrolemetry's own Ed25519 signature; archives are verified before extraction. No system profile, weather location, stock symbols or API key is attached to update requests. GitHub receives ordinary web requests (including the network address and Sparkle's app/version user agent). Source-run executables do not start the updater.
 
 Before the first public release, the feed is prepared but not deployed. A source-built app's public update check can therefore report a connection error until Publisher deploys the validated feed. This is not a claim that v1.0.0 is available.
+
+## Privacy and weather
+
+Retrolemetry has no accounts, analytics, advertising, or bundled tracking SDKs. System telemetry is read and displayed locally.
 
 Personal-location weather is optional. When location access is allowed, Core Location provides an approximate coordinate and Retrolemetry sends that coordinate to the [Open-Meteo](https://open-meteo.com/) forecast API over HTTPS. The app does not include a weather API key and does not store a location history. Denying location access leaves local weather and automatic region selection unavailable; system telemetry and a manually selected regional map still work.
 
@@ -147,6 +148,6 @@ Bug reports and focused feature requests are welcome in [GitHub Issues](https://
 
 Small, behavior-preserving fixes are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). Maintainers can find signing, notarization, and release packaging steps in [RELEASING.md](RELEASING.md).
 
-Retrolemetry is available under the [MIT License](LICENSE).
+Retrolemetry's application code is available under the [MIT License](LICENSE). [NOTICE.txt](NOTICE.txt) records the separate Sparkle and map-data notices, which are also included in the packaged app.
 
 The bundled continent outlines are simplified public-domain [Natural Earth](https://www.naturalearthdata.com/about/terms-of-use/) 110m land data. They are display artwork, not a boundary or navigation map. The offline weekday lights follow core sessions documented by [NYSE](https://www.nyse.com/trade/trading-information), [London Stock Exchange](https://docs.londonstockexchange.com/sites/default/files/documents/servicetechnicaldescriptionintroductionofnewtradingcurrencies.pdf), [Xetra](https://www.xetra.com/xetra-en/trading/trading-calendar-and-trading-hours), [Japan Exchange Group](https://www.jpx.co.jp/english/equities/trading/domestic/01.html), and [HKEX](https://www.hkex.com.hk/Services/Trading-hours-and-Severe-Weather-Arrangements/Trading-Hours/Securities-Market?sc_lang=en). Region lighting is approximate and is not trading advice or a live market-status indication.

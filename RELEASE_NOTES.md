@@ -1,11 +1,11 @@
 # Retrolemetry v1.0.0
 
-Retrolemetry is a native macOS system console built for compact 960×540 secondary displays. It combines live system telemetry, vector-style animation, local weather, and precise display controls in a lightweight menu-bar app.
+Retrolemetry is a native macOS system console designed around compact 960×540 secondary displays and scaled proportionally to other display sizes. It combines live system telemetry, vector-style animation, local weather, and precise display controls in a lightweight menu-bar app.
 
 ## Highlights
 
 - Secure in-app update checks through the menu-bar menu, with verified downloads, installation and relaunch; optional automatic checks in Settings
-- Four animated views for telemetry, radar/weather, signal analysis, and oversized live metrics
+- Four animated views: Market Watch, Weather, Signal Analysis, and Live System Metrics
 - Automatic external-display selection with a remembered preferred display
 - Green-phosphor and synthwave themes with configurable CRT-style effects
 - Menu-bar synthwave switching, dual adjustable VHS tracking lines, and three scene transition styles
@@ -34,9 +34,11 @@ Download `Retrolemetry-1.0.0.zip`, move `Retrolemetry.app` to `/Applications`, a
 
 System telemetry stays on the Mac. If weather is enabled, an approximate coordinate is sent directly to Open-Meteo over HTTPS. Retrolemetry has no account, analytics, advertising, bundled tracking SDK, or weather API key.
 
-The Israel forecast map also requests six fixed public coordinates from Open-Meteo every 15 minutes; it does not use or reveal personal location. Natural Earth supplies public-domain country artwork and the Tel Aviv city-coordinate dataset is © OpenStreetMap contributors under ODbL, separately from the MIT application code.
+The selected Israel, North America, or Europe forecast map also requests six fixed public coordinates from Open-Meteo every 15 minutes. These regional forecast requests do not include the personal coordinate. Natural Earth supplies public-domain map artwork and the Tel Aviv city-coordinate dataset is © OpenStreetMap contributors under ODbL, separately from the MIT application code.
 
-If live market data is configured, ticker symbols are sent directly to Finnhub and the user's personal API key remains in macOS Keychain. The USD→ILS panel requests public daily reference-rate history from Frankfurter. No market-data credential is bundled with the app or repository.
+If live market data is configured, ticker symbols are sent directly to Finnhub and the user's personal API key remains in macOS Keychain. Focus-chart requests send the selected symbol to Yahoo's public chart endpoint. The USD→ILS panel requests public daily reference-rate history from Frankfurter. No market-data credential is bundled with the app or repository.
+
+Update checks contact Retrolemetry's GitHub Pages feed and GitHub release downloads. No system profile, location, stock symbols, or personal API key is attached to those requests. GitHub receives ordinary network requests, including the network address and app/version user agent.
 
 ## Known limitations
 
@@ -46,4 +48,4 @@ If live market data is configured, ticker symbols are sent directly to Finnhub a
 
 ## Release integrity
 
-Publication remains held. The updater-enabled universal candidate must pass Developer ID signing, Apple notarization, stapling, Gatekeeper validation and the final clean-account acceptance check. Publisher must use the newly validated updater-enabled ZIP, not the earlier pre-updater candidate. When published, `SHA256SUMS.txt` will identify the exact ZIP also used by the signed update feed.
+Publication remains held. The retained updater-enabled universal build 20 passed Developer ID signing, Apple notarization, stapling, and Gatekeeper validation. A new build 21 must repeat those checks because packaging now includes the application license and map-data notices. Final production-app install/update acceptance and verification of the separate update-signing-key recovery backup remain pending. The VM tests are deferred until suitable test storage is available. When published, `SHA256SUMS.txt` will identify the exact ZIP also used by the signed update feed; earlier candidate archives must not be published.

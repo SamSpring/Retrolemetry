@@ -25,6 +25,8 @@ jobs:
           test -s build/Retrolemetry.app/Contents/Resources/default.metallib
           test -s build/Retrolemetry.app/Contents/Resources/AppIcon.icns
           test -s build/Retrolemetry.app/Contents/Resources/Sparkle-LICENSE.txt
+          cmp LICENSE build/Retrolemetry.app/Contents/Resources/Retrolemetry-LICENSE.txt
+          cmp NOTICE.txt build/Retrolemetry.app/Contents/Resources/Retrolemetry-NOTICE.txt
           test -x build/Retrolemetry.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate
           test -x build/Retrolemetry.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater
           test "$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' build/Retrolemetry.app/Contents/Info.plist)" = https://samspring.github.io/Retrolemetry/appcast.xml
