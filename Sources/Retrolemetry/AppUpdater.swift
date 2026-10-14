@@ -27,12 +27,15 @@ final class AppUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
               Bundle.main.bundleIdentifier == bundleIdentifier,
               UpdateConfiguration.isValid(Bundle.main.infoDictionary ?? [:]) else { return }
         guard !available else { return }
-        checkObservation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] updater, _ in
-            let enabled = updater.canCheckForUpdates
-            Task { @MainActor in self?.canCheck = enabled }
+        checkObservation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] _, _ in
+            guard let owner = self else { return }
+            Task { @MainActor in
+                owner.canCheck = owner.controller.updater.canCheckForUpdates
+            }
         }
         automaticObservation = controller.updater.observe(\.automaticallyChecksForUpdates) { [weak self] _, _ in
-            Task { @MainActor in self?.objectWillChange.send() }
+            guard let owner = self else { return }
+            Task { @MainActor in owner.objectWillChange.send() }
         }
         controller.startUpdater()
         available = true
