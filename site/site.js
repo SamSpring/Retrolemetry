@@ -8,6 +8,8 @@ function applyTheme(theme) {
   themeToggle.setAttribute("aria-label", `Switch to ${themeLabel.textContent} theme`);
   document.querySelector('meta[name="theme-color"]').content = isPhosphor ? "#020a04" : "#020707";
   for (const image of document.querySelectorAll(".app-preview")) {
+    const source = isPhosphor ? image.dataset.phosphorSrc : image.dataset.synthwaveSrc;
+    if (source && image.getAttribute("src") !== source) image.src = source;
     image.alt = `${image.dataset.alt} in ${isPhosphor ? "phosphor green" : "cyan and magenta"}.`;
   }
 }

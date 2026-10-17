@@ -13,11 +13,10 @@
       if (localStorage.getItem("retrolemetry.siteTheme") === "phosphor") document.documentElement.dataset.theme = "phosphor";
     } catch (_) {}
   </script>
-  <link rel="stylesheet" href="styles.css?v=phosphor-1">
-  <script src="site.js?v=phosphor-1" defer></script>
+  <link rel="stylesheet" href="styles.css?v=current-screens-1">
+  <script src="site.js?v=current-screens-1" defer></script>
 </head>
 <body>
-  <svg class="theme-filters" aria-hidden="true" width="0" height="0" xmlns="http://www.w3.org/2000/svg"><defs><filter id="phosphor-preview" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values=".17 .221 .068 0 0  .5 .65 .2 0 0  .215 .2795 .086 0 0  0 0 0 1 0"/></filter></defs></svg>
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="page">
     <header>
@@ -33,11 +32,13 @@
           <p class="requirements">macOS 14+ · Apple silicon &amp; Intel · Free &amp; open source</p>
           <p id="release-status" class="release-status" tabindex="-1" role="status">The first public download is in preparation. Source builds are available on GitHub.</p>
         </div>
-        <figure class="hero-screen"><img class="app-preview" src="assets/live-system-metrics.png" data-alt="Retrolemetry showing CPU, memory, disk, uptime, load and network readings" alt="Retrolemetry showing CPU, memory, disk, uptime, load and network readings in cyan and magenta." width="960" height="540"><figcaption>Live System Metrics</figcaption></figure>
+        <figure class="hero-screen"><img class="app-preview" src="assets/metrics-synthwave.png" data-synthwave-src="assets/metrics-synthwave.png" data-phosphor-src="assets/metrics-phosphor.png" data-alt="Retrolemetry showing memory and disk capacity, CPU and GPU graphs, uptime and network readings" alt="Retrolemetry showing memory and disk capacity, CPU and GPU graphs, uptime and network readings in cyan and magenta." width="1920" height="1080" fetchpriority="high"><figcaption>Live System Metrics</figcaption></figure>
       </section>
       <section class="gallery" aria-label="Retrolemetry views">
-        <figure><img class="app-preview" src="assets/weather-radar.png" data-alt="Regional weather forecast map with radar rings and weather readings" alt="Regional weather forecast map with radar rings and weather readings in cyan and magenta." width="960" height="540"><figcaption>Regional weather and forecast maps</figcaption></figure>
-        <figure><img class="app-preview" src="assets/signal-analysis.png" data-alt="Signal analysis view with animated vector grid and live telemetry traces" alt="Signal analysis view with animated vector grid and live telemetry traces in cyan and magenta." width="960" height="540"><figcaption>GPU-driven signal analysis</figcaption></figure>
+        <figure><img class="app-preview" src="assets/weather-synthwave.png" data-synthwave-src="assets/weather-synthwave.png" data-phosphor-src="assets/weather-phosphor.png" data-alt="Regional forecast map with local weather, a twelve-hour graph and five-day outlook" alt="Regional forecast map with local weather, a twelve-hour graph and five-day outlook in cyan and magenta." width="1920" height="1080" loading="lazy" decoding="async"><figcaption>Regional weather and forecast maps</figcaption></figure>
+        <figure><img class="app-preview" src="assets/signal-synthwave.png" data-synthwave-src="assets/signal-synthwave.png" data-phosphor-src="assets/signal-phosphor.png" data-alt="Signal analysis with a vector grid, GPU history and live telemetry traces" alt="Signal analysis with a vector grid, GPU history and live telemetry traces in cyan and magenta." width="1920" height="1080" loading="lazy" decoding="async"><figcaption>GPU-driven signal analysis</figcaption></figure>
+        <figure><img class="app-preview" src="assets/market-synthwave.png" data-synthwave-src="assets/market-synthwave.png" data-phosphor-src="assets/market-phosphor.png" data-alt="Market Watch with world clocks, stock quotes, a globe and reference exchange-rate history" alt="Market Watch with world clocks, stock quotes, a globe and reference exchange-rate history in cyan and magenta." width="1920" height="1080" loading="lazy" decoding="async"><figcaption>Market Watch and world clocks</figcaption></figure>
+        <figure class="desk-example"><div class="desk-stage"><img src="assets/desk-display.png" alt="A compact retro-style desk display running Retrolemetry in phosphor green." width="1329" height="1351" loading="lazy" decoding="async"></div><figcaption>A little screen, right at home on your desk</figcaption></figure>
       </section>
       <section class="features" aria-label="Retrolemetry features">
         <div><h2>Real readings</h2><p>CPU, memory, disk, network, GPU counters, uptime and optional battery flow—shown locally without analytics.</p></div>
