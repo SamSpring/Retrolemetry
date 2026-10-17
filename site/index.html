@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Retrolemetry turns a small secondary Mac display into a live retro telemetry and vector console.">
-  <meta name="theme-color" content="#020707">
+  <meta name="description" content="A native retro telemetry console for smaller Mac second screens, compact desk displays and iPad with Sidecar, with presets and custom sizes.">
+  <meta name="theme-color" content="#050a08">
   <meta name="color-scheme" content="only dark">
   <title>Retrolemetry — A retro console for your Mac</title>
   <link rel="icon" href="assets/app-icon.png">
@@ -13,8 +13,8 @@
       if (localStorage.getItem("retrolemetry.siteTheme") === "phosphor") document.documentElement.dataset.theme = "phosphor";
     } catch (_) {}
   </script>
-  <link rel="stylesheet" href="styles.css?v=current-screens-1">
-  <script src="site.js?v=current-screens-1" defer></script>
+  <link rel="stylesheet" href="styles.css?v=photo-hero-1">
+  <script src="site.js?v=photo-hero-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -25,24 +25,25 @@
     </header>
     <main id="main">
       <section class="hero" aria-labelledby="headline">
+        <div class="hero-media"><img class="hero-photo" src="assets/desk-hero.jpg" alt="Retrolemetry glowing green on a compact retro-style display, with its real desk and Mac setup around it." width="2400" height="1351" fetchpriority="high"></div>
         <div class="hero-copy">
-          <h1 id="headline">Your tiny screen,<br>alive.</h1>
-          <p class="intro">A native retro telemetry and vector console for a dedicated Mac display.</p>
+          <h1 id="headline">Your tiny<br>screen, alive.</h1>
+          <p class="intro">A native retro console for your smaller second screen. Fits compact desk displays, iPad with Sidecar, and custom sizes.</p>
           <div class="actions"><a class="button" id="download" href="https://github.com/SamSpring/Retrolemetry">View on GitHub</a></div>
           <p class="requirements">macOS 14+ · Apple silicon &amp; Intel · Free &amp; open source</p>
           <p id="release-status" class="release-status" tabindex="-1" role="status">The first public download is in preparation. Source builds are available on GitHub.</p>
         </div>
-        <figure class="hero-screen"><img class="app-preview" src="assets/metrics-synthwave.png" data-synthwave-src="assets/metrics-synthwave.png" data-phosphor-src="assets/metrics-phosphor.png" data-alt="Retrolemetry showing memory and disk capacity, CPU and GPU graphs, uptime and network readings" alt="Retrolemetry showing memory and disk capacity, CPU and GPU graphs, uptime and network readings in cyan and magenta." width="1920" height="1080" fetchpriority="high"><figcaption>Live System Metrics</figcaption></figure>
       </section>
-      <section class="gallery" aria-label="Retrolemetry views">
+      <section class="gallery" aria-labelledby="views-heading">
+        <h2 id="views-heading">Four views. One small screen.</h2>
+        <figure><img class="app-preview" src="assets/metrics-synthwave.png" data-synthwave-src="assets/metrics-synthwave.png" data-phosphor-src="assets/metrics-phosphor.png" data-alt="Retrolemetry showing memory and disk capacity, CPU and GPU graphs, uptime and network readings" alt="Retrolemetry showing memory and disk capacity, CPU and GPU graphs, uptime and network readings in cyan and magenta." width="1920" height="1080" loading="lazy" decoding="async"><figcaption>Live System Metrics</figcaption></figure>
         <figure><img class="app-preview" src="assets/weather-synthwave.png" data-synthwave-src="assets/weather-synthwave.png" data-phosphor-src="assets/weather-phosphor.png" data-alt="Regional forecast map with local weather, a twelve-hour graph and five-day outlook" alt="Regional forecast map with local weather, a twelve-hour graph and five-day outlook in cyan and magenta." width="1920" height="1080" loading="lazy" decoding="async"><figcaption>Regional weather and forecast maps</figcaption></figure>
         <figure><img class="app-preview" src="assets/signal-synthwave.png" data-synthwave-src="assets/signal-synthwave.png" data-phosphor-src="assets/signal-phosphor.png" data-alt="Signal analysis with a vector grid, GPU history and live telemetry traces" alt="Signal analysis with a vector grid, GPU history and live telemetry traces in cyan and magenta." width="1920" height="1080" loading="lazy" decoding="async"><figcaption>GPU-driven signal analysis</figcaption></figure>
         <figure><img class="app-preview" src="assets/market-synthwave.png" data-synthwave-src="assets/market-synthwave.png" data-phosphor-src="assets/market-phosphor.png" data-alt="Market Watch with world clocks, stock quotes, a globe and reference exchange-rate history" alt="Market Watch with world clocks, stock quotes, a globe and reference exchange-rate history in cyan and magenta." width="1920" height="1080" loading="lazy" decoding="async"><figcaption>Market Watch and world clocks</figcaption></figure>
-        <figure class="desk-example"><div class="desk-stage"><img src="assets/desk-display.png" alt="A compact retro-style desk display running Retrolemetry in phosphor green." width="1329" height="1351" loading="lazy" decoding="async"></div><figcaption>A little screen, right at home on your desk</figcaption></figure>
       </section>
       <section class="features" aria-label="Retrolemetry features">
         <div><h2>Real readings</h2><p>CPU, memory, disk, network, GPU counters, uptime and optional battery flow—shown locally without analytics.</p></div>
-        <div><h2>Built for a second screen</h2><p>Retrolemetry remembers its display, returns after reconnection and stays hidden when that chosen screen is away.</p></div>
+        <div><h2>Built for a second screen</h2><p>Made for smaller displays, including iPad with Sidecar. Match your display, use a preset or set custom dimensions. It remembers its screen, returns after reconnection and stays hidden when that screen is away.</p></div>
         <div><h2>Make it yours</h2><p>Move and resize modules, tune typography and CRT effects, reorder scenes, or switch between phosphor and synthwave.</p></div>
       </section>
       <p class="privacy-note">Weather uses Open-Meteo with approximate or fixed public coordinates. Optional market quotes use your own Finnhub key stored in macOS Keychain. No accounts, ads, analytics or bundled credentials.</p>
