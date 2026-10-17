@@ -1,6 +1,8 @@
 import SwiftUI
+import AppKit
 
 struct CapacityMetricContents: View {
+    @Environment(\.consoleTypography) private var typography
     let label: String
     let value: String
     let capacity: CapacityReading?
@@ -8,6 +10,12 @@ struct CapacityMetricContents: View {
     let capacityFit: Double
 
     var body: some View {
+        GeometryReader { geometry in
+        // Reserve the main text's actual width before distributing space to
+        // the side values; equal-width columns would silently shrink the percentage.
+        let titleWidth = (label as NSString).size(withAttributes: [.font: NSFont.monospacedSystemFont(ofSize: 13 * fit * typography.secondary, weight: .bold)]).width
+        let valueWidth = (value as NSString).size(withAttributes: [.font: NSFont.monospacedSystemFont(ofSize: 31 * fit * typography.primary, weight: .bold)]).width
+        let centerWidth = min(geometry.size.width * 0.55, max(titleWidth, valueWidth) + 6)
         HStack(alignment: .center, spacing: 8 * fit) {
             amount("USED", bytes: capacity?.usedBytes)
             VStack(spacing: 8 * fit) {
@@ -16,8 +24,10 @@ struct CapacityMetricContents: View {
                 Text(value).consoleFont(31 * fit, role: .primary, weight: .bold)
                     .lineLimit(1).minimumScaleFactor(0.45)
             }
-            .frame(maxWidth: .infinity)
+            .frame(width: centerWidth)
             amount("FREE", bytes: capacity?.freeBytes)
+        }
+        .frame(width: geometry.size.width, height: geometry.size.height)
         }
     }
 
