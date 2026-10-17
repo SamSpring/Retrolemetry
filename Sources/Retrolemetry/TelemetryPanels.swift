@@ -39,9 +39,9 @@ struct CapacitySideReading: View {
     let fit: Double
 
     static func compactAmount(_ bytes: Double?) -> String {
-        // Keep number and unit in one scalable text run, with a thin space rather
-        // than a full monospaced character between them. N/A stays unchanged.
-        capacityAmount(bytes).replacingOccurrences(of: " ", with: "\u{2009}")
+        // Keep number and unit adjacent in one scalable text run. Even a thin
+        // space looks wide in the large monospaced readouts. N/A stays unchanged.
+        capacityAmount(bytes).replacingOccurrences(of: " ", with: "")
     }
 
     var body: some View {

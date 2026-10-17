@@ -5,14 +5,16 @@ import AppKit
 
 final class TelemetryPanelTests: XCTestCase {
     func testCompactCapacityUnitsKeepPrecisionAndUseLessSpace() {
-        XCTAssertEqual(CapacitySideReading.compactAmount(32_600_000_000), "32.6\u{2009}GB")
-        XCTAssertEqual(CapacitySideReading.compactAmount(2_500_000_000_000), "2.50\u{2009}TB")
+        XCTAssertEqual(CapacitySideReading.compactAmount(32_600_000_000), "32.6GB")
+        XCTAssertEqual(CapacitySideReading.compactAmount(19_200_000_000), "19.2GB")
+        XCTAssertEqual(CapacitySideReading.compactAmount(2_500_000_000_000), "2.50TB")
         XCTAssertEqual(CapacitySideReading.compactAmount(nil), "N/A")
         XCTAssertEqual(CapacitySideReading.compactAmount(.nan), "N/A")
         let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 20, weight: .bold)]
         let compact = (CapacitySideReading.compactAmount(32_600_000_000) as NSString).size(withAttributes: attributes)
         let original = (capacityAmount(32_600_000_000) as NSString).size(withAttributes: attributes)
         XCTAssertLessThan(compact.width, original.width)
+        XCTAssertFalse(CapacitySideReading.compactAmount(19_200_000_000).contains(where: \.isWhitespace))
     }
 
     @MainActor

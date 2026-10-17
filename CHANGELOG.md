@@ -6,7 +6,7 @@ All notable changes to Retrolemetry will be documented here. This project follow
 
 The first public release is planned as v1.0.0. Its release date will be recorded when it is published.
 
-- Matched memory/disk used/free amounts to their dim labels and tightened capacity-unit spacing without changing the central percentages or saved layout
+- Matched memory/disk used/free amounts to their dim labels and removed the space before GB/TB without changing the central percentages or saved layout
 - Centered memory/disk headings and percentages at their original fit, with larger used/free readouts alongside them instead of reducing the main type
 - Added bounded local-forecast retries for transient server/connection failures and cancellation of superseded requests, with privacy-safe error diagnostics
 - Fixed missing location-access signing capability in hardened app bundles so macOS can request the user's consent for weather; packaging and CI now check the signed entitlement
