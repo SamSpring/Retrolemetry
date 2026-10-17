@@ -2,9 +2,9 @@
 
 All notable changes to Retrolemetry will be documented here. This project follows [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 1.0.0 - 2026-10-18
 
-The first public release is planned as v1.0.0. Its release date will be recorded when it is published.
+First public release.
 
 - Matched memory/disk used/free amounts to their dim labels, removed the space before GB/TB, and made both labels and amounts 20% smaller with close-set lower headings, without changing the central percentages or saved layout
 - Centered memory/disk headings and percentages at their original fit, with larger used/free readouts alongside them instead of reducing the main type
