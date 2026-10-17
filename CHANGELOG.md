@@ -6,6 +6,8 @@ All notable changes to Retrolemetry will be documented here. This project follow
 
 The first public release is planned as v1.0.0. Its release date will be recorded when it is published.
 
+- Added current CPU/memory percentages to Signal Analysis traces and real used/free amounts to the memory/disk tiles
+- Split the metrics network history into TX above/RX below a shared center line, with pink/cyan synthwave traces, a TX current reading and an RX lower readout; saved module IDs and frames stay unchanged
 - Bundled the application's MIT license and map-data notices alongside Sparkle's license
 - Added Sparkle 2.10.0 update checks, verified download/install/relaunch, a dedicated Retrolemetry signing key and signed HTTPS feed, and an automatic-check setting; existing preferences, layouts, credentials and login identity remain unchanged
 - Embedded and signed Sparkle's nested helpers before outer app signing; added private feed preparation, reproducible dependency locking and isolated native updater QA

@@ -455,7 +455,8 @@ struct ConsoleView: View {
                 snapshot: telemetry.snapshot,
                 cpuHistory: telemetry.cpuHistory,
                 memoryHistory: telemetry.memoryHistory,
-                networkHistory: telemetry.networkHistory,
+                networkReceiveHistory: telemetry.networkReceiveHistory,
+                networkTransmitHistory: telemetry.networkTransmitHistory,
                 gpuHistory: telemetry.gpuHistory,
                 time: time
             )
@@ -749,7 +750,8 @@ struct FullMetricsScene: View {
     let snapshot: TelemetrySnapshot
     let cpuHistory: [Double]
     let memoryHistory: [Double]
-    let networkHistory: [Double]
+    let networkReceiveHistory: [Double]
+    let networkTransmitHistory: [Double]
     var gpuHistory: [Double?] = []
     let time: Double
 
@@ -757,8 +759,16 @@ struct FullMetricsScene: View {
         ZStack {
             FrameChrome(title: "LIVE SYSTEM METRICS", section: "DAT", time: time)
             LayoutModuleContainer(scene: .fullMetrics, module: "metricCPU") { LargeMetricTile(label: "CPU LOAD", value: percent(snapshot.cpu), level: snapshot.cpu) }
-            LayoutModuleContainer(scene: .fullMetrics, module: "metricMemory") { LargeMetricTile(label: "MEMORY", value: percent(snapshot.memory), level: snapshot.memory) }
-            LayoutModuleContainer(scene: .fullMetrics, module: "metricDisk") { LargeMetricTile(label: "DISK USED", value: percent(snapshot.disk), level: snapshot.disk) }
+            LayoutModuleContainer(scene: .fullMetrics, module: "metricMemory") {
+                LargeMetricTile(label: "MEMORY", value: percent(snapshot.memory), level: snapshot.memory,
+                                showsCapacity: true, capacity: snapshot.memoryCapacity)
+                    .help("Used RAM is active + wired + compressed memory. Free is the remaining physical RAM, including cached/reclaimable memory. Amounts use decimal GB.")
+            }
+            LayoutModuleContainer(scene: .fullMetrics, module: "metricDisk") {
+                LargeMetricTile(label: "DISK USED", value: percent(snapshot.disk), level: snapshot.disk,
+                                showsCapacity: true, capacity: snapshot.diskCapacity)
+                    .help("Used and free capacity reported by macOS for the startup filesystem. Amounts use decimal GB/TB; refreshed every 30 seconds.")
+            }
             LayoutModuleContainer(scene: .fullMetrics, module: "metricNetwork") { LargeMetricTile(label: "NETWORK RX", value: byteRate(snapshot.networkIn), level: min(1, snapshot.networkIn / 12_000_000)) }
             LayoutModuleContainer(scene: .fullMetrics, module: "metricGPU") {
                 LargeMetricTile(label: "GPU BUSY", value: snapshot.gpu.map(percent) ?? "N/A", level: snapshot.gpu)
@@ -767,13 +777,17 @@ struct FullMetricsScene: View {
             LayoutModuleContainer(scene: .fullMetrics, module: "metricPower") { PowerVoltageTile(reading: snapshot.power) }
             LayoutModuleContainer(scene: .fullMetrics, module: "graphCPU") { LargeDataGraph(label: "CPU // 96 SEC", value: percent(snapshot.cpu), values: cpuHistory) }
             LayoutModuleContainer(scene: .fullMetrics, module: "graphMemory") { LargeDataGraph(label: "MEMORY // 96 SEC", value: percent(snapshot.memory), values: memoryHistory) }
-            LayoutModuleContainer(scene: .fullMetrics, module: "graphNetwork") { LargeDataGraph(label: "NETWORK // 96 SEC", value: byteRate(snapshot.networkIn), values: networkHistory) }
+            LayoutModuleContainer(scene: .fullMetrics, module: "graphNetwork") {
+                NetworkTrafficPanel(transmit: snapshot.networkOut, receiveHistory: networkReceiveHistory,
+                                    transmitHistory: networkTransmitHistory)
+            }
             LayoutModuleContainer(scene: .fullMetrics, module: "graphGPU") {
                 LargeDataGraph(label: "GPU // 96 SEC", value: snapshot.gpu.map(percent) ?? "N/A", optionalValues: gpuHistory)
             }
             LayoutModuleContainer(scene: .fullMetrics, module: "statusUptime") { LargeStatusReadout(label: "UPTIME", value: snapshot.uptime.compactUptime) }
             LayoutModuleContainer(scene: .fullMetrics, module: "statusLoad") { LargeStatusReadout(label: "LOAD 1 / 5 / 15", value: String(format: "%.1f  %.1f  %.1f", snapshot.load.0, snapshot.load.1, snapshot.load.2)) }
-            LayoutModuleContainer(scene: .fullMetrics, module: "statusTX") { LargeStatusReadout(label: "NETWORK TX", value: byteRate(snapshot.networkOut)) }
+            // Retain the saved module ID so existing custom layouts do not move or reset.
+            LayoutModuleContainer(scene: .fullMetrics, module: "statusTX") { LargeStatusReadout(label: "NETWORK RX", value: byteRate(snapshot.networkIn)) }
         }
     }
 
@@ -787,11 +801,14 @@ struct LargeMetricTile: View {
     let label: String
     let value: String
     let level: Double?
+    var showsCapacity = false
+    var capacity: CapacityReading? = nil
 
     var body: some View {
         GeometryReader { geometry in
           let valueSize = value.count > 7 ? 23.0 : 31.0
-          let requiredHeight = 13 * typography.secondary + valueSize * typography.primary + 29
+          let capacityHeight = showsCapacity ? 11 * max(typography.primary, typography.scale(.dark)) + 8 : 0
+          let requiredHeight = 13 * typography.secondary + valueSize * typography.primary + 29 + capacityHeight
           let fit = min(1, max(0.35, (geometry.size.height - 24) / requiredHeight))
           VStack(alignment: .leading, spacing: 8 * fit) {
             Text(label)
@@ -801,6 +818,9 @@ struct LargeMetricTile: View {
                 .consoleFont(valueSize * fit, role: .primary, weight: .bold)
                 .lineLimit(1)
                 .minimumScaleFactor(0.45)
+            if showsCapacity {
+                CapacitySummary(capacity: capacity, fit: fit)
+            }
             HStack(spacing: 3) {
                 ForEach(0..<12, id: \.self) { index in
                     Rectangle()
@@ -850,39 +870,9 @@ struct LargeDataGraph: View {
     var values: [Double] = []
     var optionalValues: [Double?]? = nil
 
-    private var graphLabel: some View {
-        Text(label)
-            .consoleFont(13, role: .secondary, weight: .bold)
-            .lineLimit(1).minimumScaleFactor(0.25)
-    }
-
-    private var graphValue: some View {
-        Text(value)
-            .consoleFont(18, role: .primary, weight: .bold)
-            .lineLimit(1).minimumScaleFactor(0.25)
-    }
-
     var body: some View {
         VStack(spacing: 0) {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) {
-                    graphLabel.fixedSize()
-                    Spacer(minLength: 4)
-                    graphValue.fixedSize()
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    graphLabel
-                    graphValue
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 6)
-            .fixedSize(horizontal: false, vertical: true)
-
-            Rectangle()
-                .fill(dimPhosphor.opacity(0.72))
-                .frame(height: 1)
+            DataGraphHeader(label: label, value: value)
 
             if let optionalValues {
                 LineGraph(optionalValues: optionalValues, showsBorder: false)
@@ -1885,8 +1875,8 @@ struct SignalScene: View {
                 .consoleFont(13, role: .secondary, weight: .bold, fallback: .other)
                 .lineLimit(1).minimumScaleFactor(0.6)
             }
-            LayoutModuleContainer(scene: .signal, module: "cpuTrace") { MiniTrace(label: "CPU", values: cpuHistory) }
-            LayoutModuleContainer(scene: .signal, module: "memoryTrace") { MiniTrace(label: "MEMORY", values: memoryHistory) }
+            LayoutModuleContainer(scene: .signal, module: "cpuTrace") { MiniTrace(label: "CPU", values: cpuHistory, value: String(format: "%.0f%%", snapshot.cpu * 100)) }
+            LayoutModuleContainer(scene: .signal, module: "memoryTrace") { MiniTrace(label: "MEMORY", values: memoryHistory, value: String(format: "%.0f%%", snapshot.memory * 100)) }
             LayoutModuleContainer(scene: .signal, module: "networkTrace") { MiniTrace(label: "NETWORK", values: networkHistory) }
             LayoutModuleContainer(scene: .signal, module: "ioReadout") { Readout(label: "I/O RX / TX", value: "\(byteRate(snapshot.networkIn)) / \(byteRate(snapshot.networkOut))") }
         }
@@ -2120,14 +2110,22 @@ struct CompactMeter: View {
 struct MiniTrace: View {
     let label: String
     let values: [Double]
+    var value: String? = nil
 
     var body: some View {
         VStack(spacing: 0) {
-            Text(label)
-                .consoleFont(11, role: .secondary, weight: .bold)
-                .lineLimit(1).minimumScaleFactor(0.6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 6).padding(.vertical, 4)
+            HStack(spacing: 4) {
+                Text(label)
+                    .consoleFont(11, role: .secondary, weight: .bold)
+                    .lineLimit(1).minimumScaleFactor(0.45)
+                Spacer(minLength: 0)
+                if let value {
+                    Text(value)
+                        .consoleFont(12, role: .primary, weight: .bold)
+                        .lineLimit(1).minimumScaleFactor(0.45)
+                }
+            }
+            .padding(.horizontal, 6).padding(.vertical, 4)
         Canvas { context, size in
             guard values.count > 1 else { return }
             var path = Path()
@@ -2140,6 +2138,7 @@ struct MiniTrace: View {
         }
         }
         .overlay(Rectangle().stroke(dimPhosphor.opacity(0.9), lineWidth: 1.2))
+        .clipped()
     }
 }
 
@@ -2282,7 +2281,7 @@ private func drawTrackingBand(
     }
 }
 
-private func drawGrid(
+func drawGrid(
     context: inout GraphicsContext,
     size: CGSize,
     columns: Int,

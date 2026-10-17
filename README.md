@@ -44,6 +44,8 @@ Retrolemetry turns a secondary Mac display into a native, animated system consol
 - Static layout previews can show the same CRT curvature/effects as the live screen; hidden modules have no remaining selection outline.
 - Optional animated synthwave perspective grid in Signal Analysis, with selectable patterns and CPU, GPU, network, or disk response
 - Signal Analysis can show the spinning signal or a live 96-second GPU graph above the grid horizon
+- Signal Analysis CPU/memory traces include current percentages. Memory/disk tiles show actual used/free capacity; memory free includes cached/reclaimable RAM, and amounts use decimal GB/TB.
+- Live System Metrics plots TX (uploads) upward and RX (downloads) downward on the same adaptive scale over about 96 seconds. Synthwave uses pink TX and cyan RX; the graph header shows current TX and the lower readout shows current RX.
 - Settings export, menu-bar controls, Launch at Login, a `SIGUSR1` automation toggle, and one-gesture horizontal scene navigation that ignores momentum reversals
 
 GPU utilization is read through public IOKit functions from optional graphics-driver counters. It reports the busiest exposed GPU on multi-GPU Macs; driver support can vary with hardware and macOS versions. Unsupported readings show N/A and gaps in the graph, never CPU/system load masquerading as GPU activity. Battery voltage and electrical flow (voltage × current) use optional IOPowerSources/exported battery properties; the displayed wattage is **battery flow, not CPU/GPU or total Mac power consumption**. No privileged helper, password, private sensor connection, or external process is needed for these readings. Temperature sensors remain unavailable.

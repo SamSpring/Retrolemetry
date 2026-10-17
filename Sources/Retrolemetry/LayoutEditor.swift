@@ -31,7 +31,7 @@ enum LayoutDefaults {
         case .signal:
             [module("scope", "Signal scope"), module("signalHeader", "Channel header"), module("cpuTrace", "CPU trace"), module("memoryTrace", "Memory trace"), module("networkTrace", "Network trace"), module("ioReadout", "Network I/O")]
         case .fullMetrics:
-            [module("metricCPU", "CPU tile"), module("metricGPU", "GPU tile"), module("metricMemory", "Memory tile"), module("metricDisk", "Disk tile"), module("metricNetwork", "Network tile"), module("metricPower", "Power / voltage tile"), module("graphCPU", "CPU graph"), module("graphGPU", "GPU graph"), module("graphMemory", "Memory graph"), module("graphNetwork", "Network graph"), module("statusUptime", "Uptime"), module("statusLoad", "Load averages"), module("statusTX", "Network TX")]
+            [module("metricCPU", "CPU tile"), module("metricGPU", "GPU tile"), module("metricMemory", "Memory tile"), module("metricDisk", "Disk tile"), module("metricNetwork", "Network tile"), module("metricPower", "Power / voltage tile"), module("graphCPU", "CPU graph"), module("graphGPU", "GPU graph"), module("graphMemory", "Memory graph"), module("graphNetwork", "Network TX / RX graph"), module("statusUptime", "Uptime"), module("statusLoad", "Load averages"), module("statusTX", "Network RX")]
         }
     }
 
@@ -534,7 +534,9 @@ struct LayoutEditorView: View {
             cpu: 0.38, memory: 0.61, disk: 0.62,
             networkIn: 240_000, networkOut: 82_000,
             uptime: 213_420, load: (2.4, 3.1, 3.8), gpu: 0.68,
-            power: PowerReading(voltage: 12.16, current: -0.85)
+            power: PowerReading(voltage: 12.16, current: -0.85),
+            memoryCapacity: CapacityReading(totalBytes: 32_000_000_000, usedBytes: 19_520_000_000),
+            diskCapacity: CapacityReading(totalBytes: 1_000_000_000_000, usedBytes: 620_000_000_000)
         )
         let cpu = (0..<96).map { 0.24 + sin(Double($0) * 0.22) * 0.11 }
         let memory = (0..<96).map { 0.57 + sin(Double($0) * 0.06) * 0.025 }
@@ -568,7 +570,9 @@ struct LayoutEditorView: View {
             case .signal:
                 SignalScene(snapshot: telemetry, cpuHistory: cpu, memoryHistory: memory, networkHistory: network, gpuHistory: gpu, time: 10)
             case .fullMetrics:
-                FullMetricsScene(snapshot: telemetry, cpuHistory: cpu, memoryHistory: memory, networkHistory: network, gpuHistory: gpu, time: 10)
+                FullMetricsScene(snapshot: telemetry, cpuHistory: cpu, memoryHistory: memory,
+                                 networkReceiveHistory: network.map { $0 * 1_000_000 },
+                                 networkTransmitHistory: network.reversed().map { $0 * 400_000 }, gpuHistory: gpu, time: 10)
             }
             }
             .consoleFont(14, role: .secondary, weight: .medium, fallback: .other)
