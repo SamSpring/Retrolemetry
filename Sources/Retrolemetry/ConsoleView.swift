@@ -807,10 +807,15 @@ struct LargeMetricTile: View {
     var body: some View {
         GeometryReader { geometry in
           let valueSize = value.count > 7 ? 23.0 : 31.0
-          let capacityHeight = showsCapacity ? 11 * max(typography.primary, typography.scale(.dark)) + 8 : 0
-          let requiredHeight = 13 * typography.secondary + valueSize * typography.primary + 29 + capacityHeight
+          // Capacity readouts use the spare horizontal space, not an extra row;
+          // keep the original label/percentage fit instead of shrinking them.
+          let requiredHeight = 13 * typography.secondary + valueSize * typography.primary + 29
           let fit = min(1, max(0.35, (geometry.size.height - 24) / requiredHeight))
+          let capacityFit = min(fit, max(0.2, (geometry.size.height - 24 - 21 * fit) / (13 * typography.scale(.dark) + 20 * typography.primary + 8)))
           VStack(alignment: .leading, spacing: 8 * fit) {
+            if showsCapacity {
+                CapacityMetricContents(label: label, value: value, capacity: capacity, fit: fit, capacityFit: capacityFit)
+            } else {
             Text(label)
                 .consoleFont(13 * fit, role: .secondary, weight: .bold)
                 .lineLimit(1).minimumScaleFactor(0.55)
@@ -818,8 +823,6 @@ struct LargeMetricTile: View {
                 .consoleFont(valueSize * fit, role: .primary, weight: .bold)
                 .lineLimit(1)
                 .minimumScaleFactor(0.45)
-            if showsCapacity {
-                CapacitySummary(capacity: capacity, fit: fit)
             }
             HStack(spacing: 3) {
                 ForEach(0..<12, id: \.self) { index in

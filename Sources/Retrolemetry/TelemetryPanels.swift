@@ -1,23 +1,33 @@
 import SwiftUI
 
-struct CapacitySummary: View {
+struct CapacityMetricContents: View {
+    let label: String
+    let value: String
     let capacity: CapacityReading?
     let fit: Double
+    let capacityFit: Double
 
     var body: some View {
-        HStack(spacing: 8 * fit) {
+        HStack(alignment: .center, spacing: 8 * fit) {
             amount("USED", bytes: capacity?.usedBytes)
-            Spacer(minLength: 0)
+            VStack(spacing: 8 * fit) {
+                Text(label).consoleFont(13 * fit, role: .secondary, weight: .bold)
+                    .lineLimit(1).minimumScaleFactor(0.5)
+                Text(value).consoleFont(31 * fit, role: .primary, weight: .bold)
+                    .lineLimit(1).minimumScaleFactor(0.45)
+            }
+            .frame(maxWidth: .infinity)
             amount("FREE", bytes: capacity?.freeBytes)
         }
-        .lineLimit(1).minimumScaleFactor(0.35)
     }
 
     private func amount(_ title: String, bytes: Double?) -> some View {
-        HStack(spacing: 4 * fit) {
-            Text(title).consoleFont(9 * fit, role: .dark, weight: .bold).consoleDimmed()
-            Text(capacityAmount(bytes)).consoleFont(11 * fit, role: .primary, weight: .bold)
+        VStack(spacing: 8 * capacityFit) {
+            Text(title).consoleFont(13 * capacityFit, role: .dark, weight: .bold).consoleDimmed()
+            Text(capacityAmount(bytes)).consoleFont(20 * capacityFit, role: .primary, weight: .bold)
         }
+        .lineLimit(1).minimumScaleFactor(0.4)
+        .frame(maxWidth: .infinity)
     }
 }
 

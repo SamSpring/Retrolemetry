@@ -6,6 +6,8 @@ All notable changes to Retrolemetry will be documented here. This project follow
 
 The first public release is planned as v1.0.0. Its release date will be recorded when it is published.
 
+- Centered memory/disk headings and percentages at their original fit, with larger used/free readouts alongside them instead of reducing the main type
+- Added bounded local-forecast retries for transient server/connection failures and cancellation of superseded requests, with privacy-safe error diagnostics
 - Fixed missing location-access signing capability in hardened app bundles so macOS can request the user's consent for weather; packaging and CI now check the signed entitlement
 - Added current CPU/memory percentages to Signal Analysis traces and real used/free amounts to the memory/disk tiles
 - Split the metrics network history into TX above/RX below a shared center line, with pink/cyan synthwave traces, a TX current reading and an RX lower readout; saved module IDs and frames stay unchanged

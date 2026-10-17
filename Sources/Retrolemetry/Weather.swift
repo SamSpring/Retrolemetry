@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import OSLog
 @preconcurrency import CoreLocation
 
 struct HourlyWeatherPoint {
@@ -54,6 +55,7 @@ final class WeatherModel: NSObject, ObservableObject, CLLocationManagerDelegate 
     private var coordinate: CLLocationCoordinate2D?
     private var regionalRequestInFlight = false
     private var regionalTask: Task<Void, Never>?
+    private var localTask: Task<Void, Never>?
     private var regionObserver: AnyCancellable?
     private let defaults: UserDefaults
 
@@ -92,7 +94,7 @@ final class WeatherModel: NSObject, ObservableObject, CLLocationManagerDelegate 
         refreshTimer?.tolerance = 60
     }
 
-    deinit { refreshTimer?.invalidate(); regionalTask?.cancel() }
+    deinit { refreshTimer?.invalidate(); regionalTask?.cancel(); localTask?.cancel() }
 
     private func refreshRegionalForecast() {
         let selection = WeatherRegionSelection(rawValue: defaults.string(forKey: WeatherRegionSelection.preferenceKey) ?? "") ?? .automatic
@@ -141,6 +143,7 @@ final class WeatherModel: NSObject, ObservableObject, CLLocationManagerDelegate 
             snapshot.status = "REQUESTING LOCATION"
             locationManager.requestWhenInUseAuthorization()
         case .denied, .restricted:
+            localTask?.cancel()
             coordinate = nil
             snapshot.coordinate = nil
             WeatherLocation.shared.coordinate = nil
@@ -185,29 +188,19 @@ final class WeatherModel: NSObject, ObservableObject, CLLocationManagerDelegate 
         }
         snapshot.status = "UPDATING FORECAST"
 
-        var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
-        components.queryItems = [
-            URLQueryItem(name: "latitude", value: String(coordinate.latitude)),
-            URLQueryItem(name: "longitude", value: String(coordinate.longitude)),
-            URLQueryItem(name: "current", value: "temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m"),
-            URLQueryItem(name: "hourly", value: "temperature_2m,precipitation_probability,weather_code"),
-            URLQueryItem(name: "daily", value: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"),
-            URLQueryItem(name: "forecast_days", value: "7"),
-            URLQueryItem(name: "timeformat", value: "unixtime"),
-            URLQueryItem(name: "timezone", value: "auto")
-        ]
-        guard let url = components.url else { return }
-
-        Task {
+        localTask?.cancel()
+        localTask = Task { [weak self] in
             do {
-                let (data, response) = try await URLSession.shared.data(from: url)
-                guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-                    throw URLError(.badServerResponse)
-                }
-                let payload = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
-                apply(payload)
+                let payload = try await LocalWeatherFeed.fetch(latitude: coordinate.latitude, longitude: coordinate.longitude)
+                guard !Task.isCancelled else { return }
+                self?.apply(payload)
             } catch {
-                snapshot.status = "WEATHER FEED UNAVAILABLE"
+                guard !Task.isCancelled else { return }
+                let status = WeatherFeedFailure.status(for: error)
+                self?.snapshot.status = status
+                // Log only the failure class/code: no URL, coordinate, response body or credential.
+                Logger(subsystem: "io.github.SamSpring.Retrolemetry", category: "Weather")
+                    .error("Local forecast failed: \(status, privacy: .public)")
             }
         }
     }
@@ -288,7 +281,7 @@ final class WeatherModel: NSObject, ObservableObject, CLLocationManagerDelegate 
     }
 }
 
-private struct OpenMeteoResponse: Decodable {
+struct OpenMeteoResponse: Decodable {
     let current: Current
     let hourly: Hourly
     let daily: Daily
