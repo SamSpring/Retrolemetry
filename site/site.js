@@ -1,4 +1,26 @@
 "use strict";
+const themeToggle = document.querySelector("#theme-toggle");
+const themeLabel = document.querySelector("#theme-label");
+function applyTheme(theme) {
+  const isPhosphor = theme === "phosphor";
+  document.documentElement.dataset.theme = isPhosphor ? "phosphor" : "synthwave";
+  themeLabel.textContent = isPhosphor ? "Synthwave" : "Phosphor Green";
+  themeToggle.setAttribute("aria-label", `Switch to ${themeLabel.textContent} theme`);
+  document.querySelector('meta[name="theme-color"]').content = isPhosphor ? "#020a04" : "#020707";
+  for (const image of document.querySelectorAll(".app-preview")) {
+    image.alt = `${image.dataset.alt} in ${isPhosphor ? "phosphor green" : "cyan and magenta"}.`;
+  }
+}
+if (themeToggle && themeLabel) {
+  applyTheme(document.documentElement.dataset.theme);
+  themeToggle.hidden = false;
+  themeToggle.addEventListener("click", () => {
+    const theme = document.documentElement.dataset.theme === "phosphor" ? "synthwave" : "phosphor";
+    applyTheme(theme);
+    try { localStorage.setItem("retrolemetry.siteTheme", theme); } catch (_) {}
+  });
+}
+
 const statusLine = document.querySelector("#release-status");
 const download = document.querySelector("#download");
 fetch("release.json").then(response => {
