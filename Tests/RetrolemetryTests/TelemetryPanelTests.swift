@@ -18,6 +18,24 @@ final class TelemetryPanelTests: XCTestCase {
     }
 
     @MainActor
+    func testCapacitySideTypeIsTwentyPercentSmallerWithCloseLabel() {
+        let actual = NSHostingView(rootView:
+            CapacitySideReading(title: "USED", bytes: 32_600_000_000, fit: 1)
+                .fixedSize()
+                .environment(\.consoleTypography, ConsoleTypography())
+        ).fittingSize
+        let expected = NSHostingView(rootView:
+            VStack(spacing: 1) {
+                Text("USED").font(.system(size: 13 * 0.8, weight: .bold, design: .monospaced))
+                Text("32.6GB").font(.system(size: 20 * 0.8, weight: .bold, design: .monospaced))
+            }.fixedSize()
+        ).fittingSize
+        XCTAssertGreaterThan(actual.width, 0)
+        XCTAssertEqual(actual.width, expected.width, accuracy: 0.1)
+        XCTAssertEqual(actual.height, expected.height, accuracy: 0.1)
+    }
+
+    @MainActor
     func testCapacitySideReadingsFollowDarkTextNotMetricsSlider() {
         func measured(dark: Double, primary: Double) -> NSSize {
             let root = CapacitySideReading(title: "USED", bytes: 32_600_000_000, fit: 1)

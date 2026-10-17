@@ -16,7 +16,9 @@ struct CapacityMetricContents: View {
         let titleWidth = (label as NSString).size(withAttributes: [.font: NSFont.monospacedSystemFont(ofSize: 13 * fit * typography.secondary, weight: .bold)]).width
         let valueWidth = (value as NSString).size(withAttributes: [.font: NSFont.monospacedSystemFont(ofSize: 31 * fit * typography.primary, weight: .bold)]).width
         let centerWidth = min(geometry.size.width * 0.55, max(titleWidth, valueWidth) + 6)
-        HStack(alignment: .center, spacing: 8 * fit) {
+        // Keep the compact side readings beside the bottom of the main value,
+        // so their headings sit close above their amounts rather than high up.
+        HStack(alignment: .bottom, spacing: 8 * fit) {
             CapacitySideReading(title: "USED", bytes: capacity?.usedBytes, fit: capacityFit)
             VStack(spacing: 8 * fit) {
                 Text(label).consoleFont(13 * fit, role: .secondary, weight: .bold)
@@ -45,9 +47,9 @@ struct CapacitySideReading: View {
     }
 
     var body: some View {
-        VStack(spacing: 8 * fit) {
-            Text(title).consoleFont(13 * fit, role: .dark, weight: .bold)
-            Text(Self.compactAmount(bytes)).consoleFont(20 * fit, role: .dark, weight: .bold)
+        VStack(spacing: 1 * fit) {
+            Text(title).consoleFont(13 * 0.8 * fit, role: .dark, weight: .bold)
+            Text(Self.compactAmount(bytes)).consoleFont(20 * 0.8 * fit, role: .dark, weight: .bold)
         }
         .consoleDimmed()
         .lineLimit(1).minimumScaleFactor(0.4)
