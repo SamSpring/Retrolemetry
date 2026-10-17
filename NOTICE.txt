@@ -1,0 +1,30 @@
+Retrolemetry notices
+
+Application code
+The application code is licensed under MIT. The full license and copyright
+notice are in LICENSE in the source repository and Retrolemetry-LICENSE.txt
+inside the packaged app's Contents/Resources directory.
+
+Sparkle
+Retrolemetry uses Sparkle 2.10.0 for updates. Sparkle's license is reproduced
+without modification in Sparkle-LICENSE.txt inside Contents/Resources.
+https://github.com/sparkle-project/Sparkle
+
+Natural Earth map artwork
+The continent and country outlines use simplified public-domain Natural Earth
+110m land and 50m admin-0 country datasets. Map artwork is illustrative and is
+not a navigation or boundary authority.
+https://www.naturalearthdata.com/about/terms-of-use/
+
+Tel Aviv-Yafo city coordinates
+The city coordinate ring in Sources/Retrolemetry/RadarMapData.swift is derived
+from OpenStreetMap relation 1382494. Copyright OpenStreetMap contributors.
+This coordinate dataset remains under the Open Database License (ODbL) 1.0,
+separately from the application's MIT-licensed code. Its coordinates and
+provenance are available in the public source repository.
+https://www.openstreetmap.org/relation/1382494
+https://www.openstreetmap.org/copyright
+https://opendatacommons.org/licenses/odbl/1-0/
+
+Source repository
+https://github.com/SamSpring/Retrolemetry

@@ -1,0 +1,11 @@
+{
+  "repositoryUrl": "https://github.com/SamSpring/Retrolemetry",
+  "downloadUrl": "https://github.com/SamSpring/Retrolemetry/releases/download/v1.0.0/Retrolemetry-1.0.0.zip",
+  "version": "1.0.0",
+  "architecture": "universal",
+  "minimumMacOS": "14.0",
+  "sha256": "",
+  "notarized": false,
+  "publicDownloadVerified": false,
+  "supportUrl": "https://ko-fi.com/samspring"
+}

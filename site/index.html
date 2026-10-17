@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Retrolemetry turns a small secondary Mac display into a live retro telemetry and vector console.">
+  <meta name="theme-color" content="#020707">
+  <meta name="color-scheme" content="only dark">
+  <title>Retrolemetry — A retro console for your Mac</title>
+  <link rel="icon" href="assets/app-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="page">
+    <header>
+      <a class="brand" href="./" aria-label="Retrolemetry home"><img src="assets/app-icon.png" alt="" width="52" height="52"><span>Retrolemetry</span></a>
+      <nav aria-label="Main navigation"><a href="https://ko-fi.com/samspring" target="_blank" rel="noopener noreferrer">Support on Ko-fi</a></nav>
+    </header>
+    <main id="main">
+      <section class="hero" aria-labelledby="headline">
+        <div class="hero-copy">
+          <h1 id="headline">Your tiny screen,<br>alive.</h1>
+          <p class="intro">A native retro telemetry and vector console for a dedicated Mac display.</p>
+          <div class="actions"><a class="button" id="download" href="https://github.com/SamSpring/Retrolemetry">View on GitHub</a></div>
+          <p class="requirements">macOS 14+ · Apple silicon &amp; Intel · Free &amp; open source</p>
+          <p id="release-status" class="release-status" tabindex="-1" role="status">The first public download is in preparation. Source builds are available on GitHub.</p>
+        </div>
+        <figure class="hero-screen"><img src="assets/live-system-metrics.png" alt="Retrolemetry showing CPU, memory, disk, uptime, load and network readings in cyan and magenta." width="960" height="540"><figcaption>Live System Metrics</figcaption></figure>
+      </section>
+      <section class="gallery" aria-label="Retrolemetry views">
+        <figure><img src="assets/weather-radar.png" alt="Regional weather forecast map with radar rings and weather readings." width="960" height="540"><figcaption>Regional weather and forecast maps</figcaption></figure>
+        <figure><img src="assets/signal-analysis.png" alt="Signal analysis view with animated vector grid and live telemetry traces." width="960" height="540"><figcaption>GPU-driven signal analysis</figcaption></figure>
+      </section>
+      <section class="features" aria-label="Retrolemetry features">
+        <div><h2>Real readings</h2><p>CPU, memory, disk, network, GPU counters, uptime and optional battery flow—shown locally without analytics.</p></div>
+        <div><h2>Built for a second screen</h2><p>Retrolemetry remembers its display, returns after reconnection and stays hidden when that chosen screen is away.</p></div>
+        <div><h2>Make it yours</h2><p>Move and resize modules, tune typography and CRT effects, reorder scenes, or switch between phosphor and synthwave.</p></div>
+      </section>
+      <p class="privacy-note">Weather uses Open-Meteo with approximate or fixed public coordinates. Optional market quotes use your own Finnhub key stored in macOS Keychain. No accounts, ads, analytics or bundled credentials.</p>
+    </main>
+    <footer><span>Retrolemetry by Samuel Aviv</span><a href="https://github.com/SamSpring/Retrolemetry">View source on GitHub</a><a href="https://ko-fi.com/samspring" target="_blank" rel="noopener noreferrer">Support on Ko-fi</a></footer>
+  </div>
+</body>
+</html>
