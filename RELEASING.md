@@ -2,23 +2,25 @@
 
 This checklist produces a downloadable macOS app from the Swift Package. Do not describe a release as notarized until `notarytool`, `stapler`, and Gatekeeper validation all succeed for the exact uploaded artifact.
 
-Publication of v1.0.0 is currently held. Work remains on `agent/release-prep`, draft PR #1. Do not merge, tag, create a release, deploy Pages or install a QA build as a side effect of preparation.
+Release preparation has resumed from the app-owner-accepted v1.0.0 build 28. Publication remains held. Work remains on `agent/release-prep`, draft PR #1. Do not merge, tag, create a release, deploy Pages or change the working host installation as a side effect of preparation.
 
-The universal updater-enabled build 21 includes the application license and map-data notices and has passed signing, Apple notarization, stapling and Gatekeeper checks. The application source is unchanged from build 20, which passed unit tests and the native shared-code updater harness. Preserve retained candidate archives and their evidence rather than editing them. Exact production-app VM acceptance and a separately verified updater-key recovery backup remain pending. A host kernel panic interrupted VM preparation before Retrolemetry was installed in the guest; final VM acceptance is deferred until suitable storage is connected. Use a fresh standalone RAW VM on native APFS storage for the next acceptance session, and retain existing VM images and saved states. Do not treat the shared-code harness as final production-app acceptance.
+Build 28 is a universal, updater-enabled candidate with the application license and map-data notices. Its exact retained archive passed Developer ID signing, Apple notarization, stapled-ticket validation and Gatekeeper checks. Its app source is commit `4b206ce63b29ad501b08a44b26b6e9f3493f0f5a`; later documentation-only commits do not change that archive. The developer's 60 tests passed, native weather and the requested layout changes were verified within their recorded scopes, and all 47 protected settings remained unchanged. These results do not replace final isolated production-app install/update/login acceptance or separately verified updater-key recovery, which remain pending.
+
+A configured, stopped macOS base is now available on native APFS development storage. Use an isolated official Tart clone for app acceptance; do not reinstall macOS for each app or test inside the clean base. Keep the working host app, shared base and older recovery images untouched. Preserve every retained candidate archive and its evidence; do not treat the shared-code updater harness, static checks or a previous candidate as final production-app acceptance.
 
 ## 1. Prepare the release
 
 - Update `CHANGELOG.md` with the version and date.
-- Update the version and increasing numeric build in `Resources/Info.plist` and confirm `RELEASE_NOTES.md`. The next candidate is build 21; never offer a lower build than an existing installed/released build.
+- Confirm `Resources/Info.plist` and `RELEASE_NOTES.md` identify the intended candidate. The retained current candidate is build 28. Any replacement with changed signed bytes needs a new, higher numeric build and new evidence; never overwrite a retained or released archive.
 - Add privacy-safe screenshots under `assets/screenshots/`.
 - Confirm the working tree is clean and GitHub Actions passes.
 
 ## 2. Build a universal app
 
-Install the current full Xcode release and select it with `xcode-select`. Then run:
+Install the current full Xcode release and select it with `xcode-select`. The following is the build-28 recipe, not an instruction to rebuild or replace its retained final ZIP. For a later candidate, choose a new increasing build and isolated output directories before running:
 
 ```sh
-UNIVERSAL=1 VERSION=1.0.0 BUILD_NUMBER=21 \
+UNIVERSAL=1 VERSION=1.0.0 BUILD_NUMBER=28 \
   CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
   ./scripts/package_app.sh
 ```
@@ -41,7 +43,7 @@ codesign -dvvv build/Retrolemetry.app
 
 ## 3. Notarize and staple
 
-Create a notarytool keychain profile once using an Apple ID app-specific password or App Store Connect API key. Do not commit credentials.
+Reuse the existing approved notarytool Keychain profile. The example profile name below is a placeholder, not a requirement to create another account or credential. Creating credentials needs separate approval; never commit them.
 
 ```sh
 NOTARY_PROFILE="retrolemetry-notary" VERSION=1.0.0 \
