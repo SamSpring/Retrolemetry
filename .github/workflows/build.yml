@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test telemetry and layout safeguards
+        run: swift test -c release --jobs 2
+      - name: Build and package
+        run: UNIVERSAL=1 VERSION=0.0.0-ci BUILD_NUMBER=${{ github.run_number }} ./scripts/package_app.sh
+      - name: Verify bundle
+        run: |
+          plutil -lint build/Retrolemetry.app/Contents/Info.plist
+          codesign --verify --deep --strict build/Retrolemetry.app
+          codesign --display --entitlements - --xml build/Retrolemetry.app > build/signed-entitlements.plist
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.personal-information.location' build/signed-entitlements.plist)" = true
+          test -x build/Retrolemetry.app/Contents/MacOS/Retrolemetry
+          test -s build/Retrolemetry.app/Contents/Resources/default.metallib
+          test -s build/Retrolemetry.app/Contents/Resources/AppIcon.icns
+          test -s build/Retrolemetry.app/Contents/Resources/Sparkle-LICENSE.txt
+          cmp LICENSE build/Retrolemetry.app/Contents/Resources/Retrolemetry-LICENSE.txt
+          cmp NOTICE.txt build/Retrolemetry.app/Contents/Resources/Retrolemetry-NOTICE.txt
+          test -x build/Retrolemetry.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate
+          test -x build/Retrolemetry.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater
+          test "$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' build/Retrolemetry.app/Contents/Info.plist)" = https://samspring.github.io/Retrolemetry/appcast.xml
+          test "$(/usr/libexec/PlistBuddy -c 'Print :SURequireSignedFeed' build/Retrolemetry.app/Contents/Info.plist)" = true
+          test "$(/usr/libexec/PlistBuddy -c 'Print :SUVerifyUpdateBeforeExtraction' build/Retrolemetry.app/Contents/Info.plist)" = true
+          otool -l build/Retrolemetry.app/Contents/MacOS/Retrolemetry | grep -q '@executable_path/../Frameworks'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' build/Retrolemetry.app/Contents/Info.plist)" = AppIcon.icns
+          ARCHS=$(lipo -archs build/Retrolemetry.app/Contents/MacOS/Retrolemetry)
+          echo "$ARCHS" | grep -qw arm64
+          echo "$ARCHS" | grep -qw x86_64
+      - name: Verify update feed and release-site safeguards
+        run: |
+          swift scripts/verify_appcast.swift Resources/Info.plist site/appcast.xml
+          python3 scripts/validate_site.py
+          sh -n scripts/package_app.sh scripts/embed_sparkle.sh scripts/notarize_app.sh

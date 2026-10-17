@@ -9,7 +9,6 @@ Icon?
 .build/
 .swiftpm/
 Packages/
-Package.resolved
 
 # Xcode build products and local state
 build/
@@ -32,6 +31,10 @@ DerivedData/
 *.provisionprofile
 *.key
 *.pem
+*.p8
+*.pfx
+*.ed25519
+*.certSigningRequest
 .env
 .env.*
 !.env.example
@@ -39,9 +42,13 @@ DerivedData/
 # Local app bundles, archives, packaging, and exported settings
 *.app/
 *.zip
+*.dmg
 *.xcarchive/
 outputs/
 work/
+dist/
+.release-prep/
+__pycache__/
 
 # Editors
 .vscode/
