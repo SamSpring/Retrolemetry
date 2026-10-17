@@ -61,12 +61,17 @@ fi
 xattr -cr "$APP_BUNDLE"
 
 if [ -n "${CODESIGN_IDENTITY:-}" ]; then
-    codesign --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$APP_BUNDLE"
+    codesign --force --options runtime --timestamp --entitlements Resources/Retrolemetry.entitlements --sign "$CODESIGN_IDENTITY" "$APP_BUNDLE"
     echo "Signed with Developer ID identity: $CODESIGN_IDENTITY"
 else
-    codesign --force --sign - "$APP_BUNDLE"
+    codesign --force --entitlements Resources/Retrolemetry.entitlements --sign - "$APP_BUNDLE"
     echo "Applied an ad-hoc signature. This build is not notarized."
 fi
+
+# Hardened apps need this declared resource capability before Core Location can
+# display its normal user-consent prompt. It does not grant location permission.
+codesign --display --entitlements - --xml "$APP_BUNDLE" > "$STAGING_DIR/signed-entitlements.plist"
+test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.personal-information.location' "$STAGING_DIR/signed-entitlements.plist")" = true
 
 case "$DIST_DIR" in
     /*) ARCHIVE="$DIST_DIR/$APP_NAME-$VERSION.zip" ;;

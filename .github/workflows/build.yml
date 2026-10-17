@@ -21,6 +21,8 @@ jobs:
         run: |
           plutil -lint build/Retrolemetry.app/Contents/Info.plist
           codesign --verify --deep --strict build/Retrolemetry.app
+          codesign --display --entitlements - --xml build/Retrolemetry.app > build/signed-entitlements.plist
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.personal-information.location' build/signed-entitlements.plist)" = true
           test -x build/Retrolemetry.app/Contents/MacOS/Retrolemetry
           test -s build/Retrolemetry.app/Contents/Resources/default.metallib
           test -s build/Retrolemetry.app/Contents/Resources/AppIcon.icns
