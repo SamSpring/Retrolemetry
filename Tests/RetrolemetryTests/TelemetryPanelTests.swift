@@ -4,6 +4,34 @@ import AppKit
 @testable import Retrolemetry
 
 final class TelemetryPanelTests: XCTestCase {
+    func testCompactCapacityUnitsKeepPrecisionAndUseLessSpace() {
+        XCTAssertEqual(CapacitySideReading.compactAmount(32_600_000_000), "32.6\u{2009}GB")
+        XCTAssertEqual(CapacitySideReading.compactAmount(2_500_000_000_000), "2.50\u{2009}TB")
+        XCTAssertEqual(CapacitySideReading.compactAmount(nil), "N/A")
+        XCTAssertEqual(CapacitySideReading.compactAmount(.nan), "N/A")
+        let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 20, weight: .bold)]
+        let compact = (CapacitySideReading.compactAmount(32_600_000_000) as NSString).size(withAttributes: attributes)
+        let original = (capacityAmount(32_600_000_000) as NSString).size(withAttributes: attributes)
+        XCTAssertLessThan(compact.width, original.width)
+    }
+
+    @MainActor
+    func testCapacitySideReadingsFollowDarkTextNotMetricsSlider() {
+        func measured(dark: Double, primary: Double) -> NSSize {
+            let root = CapacitySideReading(title: "USED", bytes: 32_600_000_000, fit: 1)
+                .fixedSize()
+                .environment(\.consoleTypography, ConsoleTypography(groups: ["primary": primary, "secondary": 3, "dark": dark]))
+            return NSHostingView(rootView: root).fittingSize
+        }
+        let original = measured(dark: 1, primary: 1)
+        let largerMetrics = measured(dark: 1, primary: 3)
+        XCTAssertGreaterThan(original.width, 0)
+        XCTAssertEqual(original.width, largerMetrics.width, accuracy: 0.1)
+        XCTAssertEqual(original.height, largerMetrics.height, accuracy: 0.1)
+        XCTAssertGreaterThan(measured(dark: 2, primary: 1).width, original.width)
+        XCTAssertGreaterThan(measured(dark: 2, primary: 1).height, original.height)
+    }
+
     func testCapacityCountsAndPercentageAgree() throws {
         let reading = try XCTUnwrap(CapacityReading(totalBytes: 1_000_000_000_000, usedBytes: 970_000_000_000))
         XCTAssertEqual(reading.freeBytes, 30_000_000_000)

@@ -811,7 +811,7 @@ struct LargeMetricTile: View {
           // keep the original label/percentage fit instead of shrinking them.
           let requiredHeight = 13 * typography.secondary + valueSize * typography.primary + 29
           let fit = min(1, max(0.35, (geometry.size.height - 24) / requiredHeight))
-          let capacityFit = min(fit, max(0.2, (geometry.size.height - 24 - 21 * fit) / (13 * typography.scale(.dark) + 20 * typography.primary + 8)))
+          let capacityFit = min(fit, max(0.2, (geometry.size.height - 24 - 21 * fit) / (33 * typography.scale(.dark) + 8)))
           VStack(alignment: .leading, spacing: 8 * fit) {
             if showsCapacity {
                 CapacityMetricContents(label: label, value: value, capacity: capacity, fit: fit, capacityFit: capacityFit)

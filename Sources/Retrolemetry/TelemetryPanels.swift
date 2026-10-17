@@ -17,7 +17,7 @@ struct CapacityMetricContents: View {
         let valueWidth = (value as NSString).size(withAttributes: [.font: NSFont.monospacedSystemFont(ofSize: 31 * fit * typography.primary, weight: .bold)]).width
         let centerWidth = min(geometry.size.width * 0.55, max(titleWidth, valueWidth) + 6)
         HStack(alignment: .center, spacing: 8 * fit) {
-            amount("USED", bytes: capacity?.usedBytes)
+            CapacitySideReading(title: "USED", bytes: capacity?.usedBytes, fit: capacityFit)
             VStack(spacing: 8 * fit) {
                 Text(label).consoleFont(13 * fit, role: .secondary, weight: .bold)
                     .lineLimit(1).minimumScaleFactor(0.5)
@@ -25,17 +25,31 @@ struct CapacityMetricContents: View {
                     .lineLimit(1).minimumScaleFactor(0.45)
             }
             .frame(width: centerWidth)
-            amount("FREE", bytes: capacity?.freeBytes)
+            CapacitySideReading(title: "FREE", bytes: capacity?.freeBytes, fit: capacityFit)
         }
         .frame(width: geometry.size.width, height: geometry.size.height)
         }
     }
 
-    private func amount(_ title: String, bytes: Double?) -> some View {
-        VStack(spacing: 8 * capacityFit) {
-            Text(title).consoleFont(13 * capacityFit, role: .dark, weight: .bold).consoleDimmed()
-            Text(capacityAmount(bytes)).consoleFont(20 * capacityFit, role: .primary, weight: .bold)
+}
+
+struct CapacitySideReading: View {
+    let title: String
+    let bytes: Double?
+    let fit: Double
+
+    static func compactAmount(_ bytes: Double?) -> String {
+        // Keep number and unit in one scalable text run, with a thin space rather
+        // than a full monospaced character between them. N/A stays unchanged.
+        capacityAmount(bytes).replacingOccurrences(of: " ", with: "\u{2009}")
+    }
+
+    var body: some View {
+        VStack(spacing: 8 * fit) {
+            Text(title).consoleFont(13 * fit, role: .dark, weight: .bold)
+            Text(Self.compactAmount(bytes)).consoleFont(20 * fit, role: .dark, weight: .bold)
         }
+        .consoleDimmed()
         .lineLimit(1).minimumScaleFactor(0.4)
         .frame(maxWidth: .infinity)
     }
