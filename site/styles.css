@@ -6,3 +6,20 @@ header{display:flex;align-items:center;justify-content:space-between;gap:28px;pa
 @media(max-width:1000px){.page{padding:0 28px}.hero{grid-template-columns:1fr;gap:52px;padding:72px 0}.hero-copy{text-align:center}.intro,.release-status{margin-left:auto;margin-right:auto}.gallery,.features{gap:26px;padding-left:0;padding-right:0}h1{font-size:clamp(56px,10vw,84px)}}
 @media(max-width:650px){.page{padding:0 20px}header{padding:22px 0}.brand{font-size:22px;gap:9px}.brand img{width:40px;height:40px}nav{font-size:13px}.hero{padding:60px 0 48px;gap:40px}h1{font-size:clamp(43px,13vw,62px);letter-spacing:-2.6px}.intro{font-size:20px;margin:24px 0 28px}.button{width:100%;font-size:19px}.requirements,.release-status{font-size:14px}.gallery{grid-template-columns:1fr;padding-bottom:56px}.features{grid-template-columns:1fr;gap:34px;padding:48px 0}h2{font-size:25px;margin-bottom:10px}.features p{font-size:17px}.privacy-note{font-size:14px;margin:28px 0 38px}footer{align-items:flex-start;flex-direction:column;gap:16px;font-size:14px;padding:0 0 30px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* The page and console previews share the same two display palettes. */
+.theme-filters{position:absolute;pointer-events:none;overflow:hidden}
+header{flex-wrap:wrap}
+nav{display:flex;align-items:center;gap:24px}
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-width:176px;min-height:44px;padding:10px 16px;border:1px solid #91ad9a66;border-radius:999px;background:#0a1510;color:var(--ink);font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+.theme-toggle[hidden]{display:none}
+.theme-toggle:hover{background:#14261a;border-color:var(--green)}
+.theme-toggle:focus-visible{outline:3px solid var(--cyan);outline-offset:5px}
+.theme-dot{width:10px;height:10px;border-radius:50%;background:#67ff79;box-shadow:0 0 10px #67ff7940}
+:root[data-theme="phosphor"]{--ink:#d9ffdf;--body:#bbdfc0;--muted:#9bbca1;--green:#57ff6e;--cyan:#a7ff9e;--pink:#45d85a;--rule:#74ff8c35;background:#020a04}
+:root[data-theme="phosphor"] body{background:#020a04;background-image:radial-gradient(circle at 12% 10%,#125b2b66,transparent 31rem),radial-gradient(circle at 88% 12%,#123d1d4d,transparent 34rem),linear-gradient(#020a04,#041008 65%,#020704)}
+:root[data-theme="phosphor"] .button{background:linear-gradient(110deg,#75ff83,#b0ff9d)}
+:root[data-theme="phosphor"] .button:hover{background:#bdffad}
+:root[data-theme="phosphor"] .app-preview{filter:url(#phosphor-preview)}
+:root[data-theme="phosphor"] .theme-dot{background:linear-gradient(135deg,#50eaff 50%,#ff3ca8 50%);box-shadow:none}
+@media(max-width:650px){nav{width:100%;justify-content:space-between;gap:16px;font-size:14px}.theme-toggle{min-width:160px;font-size:14px}}
