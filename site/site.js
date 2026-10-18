@@ -6,7 +6,7 @@ function applyTheme(theme) {
   document.documentElement.dataset.theme = isPhosphor ? "phosphor" : "synthwave";
   themeLabel.textContent = isPhosphor ? "Synthwave" : "Phosphor Green";
   themeToggle.setAttribute("aria-label", `Switch to ${themeLabel.textContent} theme`);
-  document.querySelector('meta[name="theme-color"]').content = isPhosphor ? "#030b05" : "#050a08";
+  document.querySelector('meta[name="theme-color"]').content = isPhosphor ? "#020c05" : "#080619";
   for (const image of document.querySelectorAll(".app-preview")) {
     const source = isPhosphor ? image.dataset.phosphorSrc : image.dataset.synthwaveSrc;
     if (source && image.getAttribute("src") !== source) image.src = source;
