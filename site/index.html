@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A native retro telemetry console for smaller Mac second screens, compact desk displays and iPad with Sidecar, with presets and custom sizes.">
+  <meta name="description" content="A modular retro console for smaller Mac second screens: system stats, world clocks, stocks and weather, with customizable layouts, phosphor and synthwave themes.">
   <meta name="theme-color" content="#080619">
   <meta name="color-scheme" content="only dark">
   <title>Retrolemetry — A retro console for your Mac</title>
@@ -13,7 +13,7 @@
       if (localStorage.getItem("retrolemetry.siteTheme") === "phosphor") document.documentElement.dataset.theme = "phosphor";
     } catch (_) {}
   </script>
-  <link rel="stylesheet" href="styles.css?v=crt-themes-1">
+  <link rel="stylesheet" href="styles.css?v=data-customization-1">
   <script src="site.js?v=crt-themes-1" defer></script>
 </head>
 <body>
@@ -41,10 +41,52 @@
         <figure><img class="app-preview" src="assets/signal-synthwave.png" data-synthwave-src="assets/signal-synthwave.png" data-phosphor-src="assets/signal-phosphor.png" data-alt="Signal analysis with a vector grid, GPU history and live telemetry traces" alt="Signal analysis with a vector grid, GPU history and live telemetry traces in cyan and magenta." width="1920" height="1080" loading="lazy" decoding="async"><figcaption>GPU-driven signal analysis</figcaption></figure>
         <figure><img class="app-preview" src="assets/market-synthwave.png" data-synthwave-src="assets/market-synthwave.png" data-phosphor-src="assets/market-phosphor.png" data-alt="Market Watch with world clocks, stock quotes, a globe and reference exchange-rate history" alt="Market Watch with world clocks, stock quotes, a globe and reference exchange-rate history in cyan and magenta." width="1920" height="1080" loading="lazy" decoding="async"><figcaption>Market Watch and world clocks</figcaption></figure>
       </section>
-      <section class="features" aria-label="Retrolemetry features">
-        <div><h2>Real readings</h2><p>CPU, memory, disk, network, GPU counters, uptime and optional battery flow—shown locally without analytics.</p></div>
-        <div><h2>Built for a second screen</h2><p>Made for smaller displays, including iPad with Sidecar. Match your display, use a preset or set custom dimensions. It remembers its screen, returns after reconnection and stays hidden when that screen is away.</p></div>
-        <div><h2>Make it yours</h2><p>Move and resize modules, tune typography and CRT effects, reorder scenes, or switch between phosphor and synthwave.</p></div>
+      <section class="data-overview" aria-labelledby="data-heading">
+        <div class="section-heading"><p class="eyebrow">What’s on screen</p><h2 id="data-heading">Your Mac. And a little more.</h2><p>System readings, the forecast and a view of the wider world. Here’s what you can keep an eye on.</p></div>
+        <div class="data-grid">
+          <article class="data-card">
+            <h3><span class="data-index" aria-hidden="true">01 /</span> Your system</h3>
+            <ul>
+              <li><strong>CPU &amp; GPU</strong><span>Usage and history graphs, plus system load averages.</span></li>
+              <li><strong>RAM &amp; disk</strong><span>Usage percentages and actual used/free capacity.</span></li>
+              <li><strong>Network</strong><span>Upload and download rates with live traffic history.</span></li>
+              <li><strong>Uptime</strong><span>Days, hours and minutes since your Mac last started.</span></li>
+              <li><strong>Battery readings</strong><span>Optional battery power flow and voltage.</span></li>
+            </ul>
+            <p class="data-note">GPU and battery readings depend on hardware support. Battery flow is not total Mac power use.</p>
+          </article>
+          <article class="data-card">
+            <h3><span class="data-index" aria-hidden="true">02 /</span> Your weather</h3>
+            <ul>
+              <li><strong>Current conditions</strong><span>Temperature, feels-like temperature and conditions.</span></li>
+              <li><strong>The details</strong><span>Humidity, wind speed and rainfall.</span></li>
+              <li><strong>Hourly forecast</strong><span>The next 12 hours of temperature and precipitation.</span></li>
+              <li><strong>Daily outlook</strong><span>A configurable 3–7-day forecast for the week ahead.</span></li>
+              <li><strong>Regional scans</strong><span>Forecast maps for Israel, North America and Europe.</span></li>
+            </ul>
+            <p class="data-note">Regional scans use weather-model forecasts, rather than live precipitation radar.</p>
+          </article>
+          <article class="data-card">
+            <h3><span class="data-index" aria-hidden="true">03 /</span> Markets &amp; time</h3>
+            <ul>
+              <li><strong>World clocks</strong><span>Three configurable locations, with automatic daylight-saving changes.</span></li>
+              <li><strong>Stock watchlists</strong><span>Your choice of symbols, with prices and daily changes.</span></li>
+              <li><strong>Selectable charts</strong><span>Switch between Today, 1 Week, 1 Month and 1 Year.</span></li>
+              <li><strong>Currency history</strong><span>USD→ILS daily reference rates and a history chart.</span></li>
+              <li><strong>A world in motion</strong><span>A rotating globe with clock-based market-session lights.</span></li>
+            </ul>
+            <p class="data-note">Live stock quotes need your own Finnhub API key. Currency rates are daily reference data.</p>
+          </article>
+        </div>
+        <p class="data-extra"><strong>Plus Signal Analysis.</strong> A live vector grid, spinning signal or GPU history, with CPU, memory and network traces.</p>
+      </section>
+      <section class="features" aria-labelledby="customization-heading">
+        <div class="section-heading"><p class="eyebrow">Modular by design</p><h2 id="customization-heading">Make space for what matters.</h2><p>Each view is made of modules you can move, resize or hide. Keep the readings you want, then make the console feel like yours.</p></div>
+        <div class="feature-grid">
+          <div><h3>Your layout</h3><p>Arrange modules within each view, adjust text sizes and hide the things you don’t need. Fine-tune individual views or share typography settings across them.</p></div>
+          <div><h3>Your atmosphere</h3><p>Choose phosphor green or synthwave. Dial in CRT curvature, bloom, scan lines, noise and vignette. Reorder the four views, set automatic cycling and choose a transition style.</p></div>
+          <div><h3>Your second screen</h3><p>Made for smaller displays, including iPad with Sidecar. Match your display, use a preset or set custom dimensions. It remembers its screen, returns after reconnection and stays hidden when that screen is away.</p></div>
+        </div>
       </section>
       <p class="privacy-note">Weather uses Open-Meteo with approximate or fixed public coordinates. Optional market quotes use your own Finnhub key stored in macOS Keychain. No accounts, ads, analytics or bundled credentials.</p>
     </main>
